@@ -1,414 +1,224 @@
 import React from "react";
-
 import {
-  View,
-  Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
-import {
-  router,
-} from "expo-router";
-
 import Glass from "../../components/glass/Glass";
-
+import MatchCard from "../../components/matches/MatchCard";
+import { matches } from "../../data/matches";
 import { useAppTheme } from "../../theme/useAppTheme";
+import { getTranslations } from "../../locales/i18n";
 
-export default function MatchesScreen() {
-  const { dark, colors, brand } =
-    useAppTheme();
-
-  const matches = [
-    {
-      id: "slovenia-scotland",
-      home: "Slovenia",
-      away: "Scotland",
-      homeScore: "0",
-      awayScore: "0",
-    },
-
-    {
-      id: "faroe-kazakhstan",
-      home: "Faroe Islands",
-      away: "Kazakhstan",
-      homeScore: "1",
-      awayScore: "1",
-    },
-
-    {
-      id: "iceland-estonia",
-      home: "Iceland",
-      away: "Estonia",
-      homeScore: "1",
-      awayScore: "1",
-    },
-
-    {
-      id: "san-marino-finland",
-      home: "San Marino",
-      away: "Finland",
-      homeScore: "0",
-      awayScore: "7",
-    },
-
-    {
-      id: "bulgaria-luxembourg",
-      home: "Bulgaria",
-      away: "Luxembourg",
-      homeScore: "1",
-      awayScore: "2",
-    },
-  ];
+export default function HomeScreen() {
+  const { colors, dark } = useAppTheme();
+  const { t } = getTranslations();
 
   return (
     <ScrollView
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+      contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={
-        styles.content
-      }
     >
-      <Glass
-        intensity={45}
-        style={styles.promotion}
-      >
-        <Text
-          style={[
-            styles.promotionTitle,
-            {
-              color: colors.text,
-            },
-          ]}
-        >
-          Toute l'actualité du football
-        </Text>
-
-        <Text
-          style={[
-            styles.promotionDescription,
-            {
-              color:
-                colors.textSecondary,
-            },
-          ]}
-        >
-          Scores • Résultats • Classements
-          {" • "}Transferts
-        </Text>
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[
-            styles.promotionButton,
-            {
-              backgroundColor:
-                brand.yellow,
-            },
-          ]}
-          onPress={() =>
-            router.push("/explore")
-          }
-        >
+      <View style={styles.heading}>
+        <View>
           <Text
             style={[
-              styles.promotionButtonText,
-              {
-                color: brand.green,
-              },
+              styles.eyebrow,
+              { color: colors.green },
             ]}
           >
-            Découvrir GeSoccer
+            GE SOCCER
           </Text>
-        </TouchableOpacity>
-      </Glass>
 
-      <Glass
-        intensity={30}
-        style={styles.competition}
-      >
-        <View
-          style={[
-            styles.trophy,
-            {
-              backgroundColor:
-                "rgba(75,132,47,0.12)",
-            },
-          ]}
-        >
-          <Text style={styles.trophyText}>
-            🏆
+          <Text
+            style={[
+              styles.title,
+              { color: colors.text },
+            ]}
+          >
+            {t.matches || "Matchs"}
           </Text>
         </View>
 
-        <Text
+        <View
           style={[
-            styles.competitionText,
+            styles.livePill,
             {
-              color: colors.text,
+              backgroundColor: dark
+                ? "rgba(75,132,47,0.18)"
+                : "rgba(75,132,47,0.10)",
             },
           ]}
         >
-          UEFA NATIONS LEAGUE
-        </Text>
-      </Glass>
-
-      {matches.map((match) => (
-        <TouchableOpacity
-          key={match.id}
-          activeOpacity={0.8}
-          onPress={() =>
-            router.push({
-              pathname:
-                "/match/[id]",
-              params: {
-                id: match.id,
-              },
-            })
-          }
-        >
           <View
             style={[
-              styles.match,
-              {
-                backgroundColor:
-                  dark
-                    ? "rgba(30,30,30,0.72)"
-                    : "rgba(255,255,255,0.80)",
+              styles.liveDot,
+              { backgroundColor: colors.green },
+            ]}
+          />
 
-                borderBottomColor:
-                  colors.border,
-              },
+          <Text
+            style={[
+              styles.liveText,
+              { color: colors.green },
             ]}
           >
-            <View
-              style={styles.team}
-            >
-              <Text
-                style={[
-                  styles.teamName,
-                  {
-                    color:
-                      colors.text,
-                  },
-                ]}
-              >
-                {match.home}
-              </Text>
+            LIVE
+          </Text>
+        </View>
+      </View>
 
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor:
-                      brand.green,
-                  },
-                ]}
-              >
-                <Text
-                  style={styles.badgeText}
-                >
-                  {match.home[0]}
-                </Text>
-              </View>
-            </View>
+      <Glass
+        intensity={dark ? 40 : 60}
+        style={[
+          styles.promo,
+          { borderColor: colors.border },
+        ]}
+      >
+        <View style={styles.promoText}>
+          <Text
+            style={[
+              styles.promoTitle,
+              { color: colors.text },
+            ]}
+          >
+            {t.promotionTitle || "Toute l'actualité football"}
+          </Text>
 
-            <View
-              style={styles.score}
-            >
-              <Text
-                style={[
-                  styles.scoreText,
-                  {
-                    color:
-                      colors.text,
-                  },
-                ]}
-              >
-                {match.homeScore}
-                {" - "}
-                {match.awayScore}
-              </Text>
+          <Text
+            style={[
+              styles.promoDescription,
+              { color: colors.textSecondary },
+            ]}
+          >
+            {t.promotionDescription ||
+              "Résultats, matchs, équipes et compétitions au même endroit."}
+          </Text>
+        </View>
+      </Glass>
 
-              <Text
-                style={[
-                  styles.ft,
-                  {
-                    color:
-                      colors.textSecondary,
-                  },
-                ]}
-              >
-                FIN
-              </Text>
-            </View>
+      <View style={styles.sectionHeader}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.text },
+          ]}
+        >
+          {t.today || "Aujourd'hui"}
+        </Text>
 
-            <View
-              style={[
-                styles.team,
-                styles.away,
-              ]}
-            >
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor:
-                      brand.greenLight,
-                  },
-                ]}
-              >
-                <Text
-                  style={styles.badgeText}
-                >
-                  {match.away[0]}
-                </Text>
-              </View>
+        <Text
+          style={[
+            styles.sectionCount,
+            { color: colors.textSecondary },
+          ]}
+        >
+          {matches.length} matchs
+        </Text>
+      </View>
 
-              <Text
-                style={[
-                  styles.teamName,
-                  {
-                    color:
-                      colors.text,
-                  },
-                ]}
-              >
-                {match.away}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+      {matches.map((match) => (
+        <MatchCard
+          key={match.id}
+          match={match}
+        />
       ))}
-
-      <View
-        style={styles.bottomSpace}
-      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+
   content: {
-    paddingTop: 1,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 120,
   },
 
-  promotion: {
-    margin: 12,
-    borderRadius: 20,
-    padding: 16,
-  },
-
-  promotionTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-  },
-
-  promotionDescription: {
-    fontSize: 12,
-    marginTop: 8,
-    marginBottom: 16,
-  },
-
-  promotionButton: {
-    height: 50,
-    borderRadius: 16,
+  heading: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    marginBottom: 18,
   },
 
-  promotionButtonText: {
-    fontSize: 16,
+  eyebrow: {
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
+
+  title: {
+    marginTop: 3,
+    fontSize: 32,
     fontWeight: "900",
   },
 
-  competition: {
-    marginHorizontal: 10,
-    height: 70,
-    borderRadius: 18,
-    paddingHorizontal: 15,
+  livePill: {
     flexDirection: "row",
     alignItems: "center",
-  },
-
-  trophy: {
-    width: 40,
-    height: 40,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
     borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
   },
 
-  trophyText: {
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+
+  liveText: {
+    fontSize: 10,
+    fontWeight: "900",
+  },
+
+  promo: {
+    borderRadius: 25,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 20,
+    marginBottom: 22,
+  },
+
+  promoText: {
+    maxWidth: "92%",
+  },
+
+  promoTitle: {
+    fontSize: 19,
+    fontWeight: "900",
+  },
+
+  promoDescription: {
+    marginTop: 6,
+    lineHeight: 19,
+    fontSize: 13,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  sectionTitle: {
     fontSize: 20,
-  },
-
-  competitionText: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
     fontWeight: "900",
   },
 
-  match: {
-    minHeight: 105,
-    marginHorizontal: 10,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-  },
-
-  team: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 8,
-  },
-
-  away: {
-    justifyContent: "flex-start",
-  },
-
-  teamName: {
-    fontSize: 15,
-    fontWeight: "500",
-    textAlign: "right",
-  },
-
-  badge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "900",
-  },
-
-  score: {
-    width: 88,
-    alignItems: "center",
-  },
-
-  scoreText: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-
-  ft: {
+  sectionCount: {
     fontSize: 12,
-    fontWeight: "800",
-    marginTop: 2,
-  },
-
-  bottomSpace: {
-    height: 20,
+    fontWeight: "700",
   },
 });
