@@ -43,7 +43,8 @@ async function readCache(key) {
       return null;
     }
 
-    const age = Date.now() - cached.timestamp;
+    const age =
+      Date.now() - cached.timestamp;
 
     if (age > cached.ttl) {
       await AsyncStorage.removeItem(key);
@@ -56,7 +57,11 @@ async function readCache(key) {
   }
 }
 
-async function writeCache(key, data, ttl) {
+async function writeCache(
+  key,
+  data,
+  ttl
+) {
   try {
     await AsyncStorage.setItem(
       key,
@@ -83,13 +88,31 @@ function buildUrl(params = {}) {
     )
     .map(
       (key) =>
-        `${encodeURIComponent(key)}=${encodeURIComponent(
+        `${encodeURIComponent(
+          key
+        )}=${encodeURIComponent(
           String(params[key])
         )}`
     )
     .join("&");
 
   return `${base}${query ? `?${query}` : ""}`;
+}
+
+function getLocalDate() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+
+  const month = String(
+    now.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    now.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 async function request(
@@ -114,7 +137,8 @@ async function request(
   );
 
   if (!options.forceRefresh) {
-    const cached = await readCache(cacheKey);
+    const cached =
+      await readCache(cacheKey);
 
     if (cached !== null) {
       return cached;
@@ -126,22 +150,30 @@ async function request(
     ...params,
   });
 
-  const controller = new AbortController();
+  const controller =
+    new AbortController();
 
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, options.timeout || 15000);
+  const timeout = setTimeout(
+    () => {
+      controller.abort();
+    },
+    options.timeout || 15000
+  );
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-      signal: controller.signal,
-    });
+    const response =
+      await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept:
+            "application/json",
+        },
+        signal:
+          controller.signal,
+      });
 
-    const text = await response.text();
+    const text =
+      await response.text();
 
     let data;
 
@@ -149,7 +181,9 @@ async function request(
       data = JSON.parse(text);
     } catch {
       data = {
-        error: text || "Réponse invalide du serveur.",
+        error:
+          text ||
+          "Réponse invalide du serveur.",
       };
     }
 
@@ -167,7 +201,9 @@ async function request(
       Object.keys(data.errors).length > 0
     ) {
       throw new Error(
-        Object.values(data.errors)
+        Object.values(
+          data.errors
+        )
           .map(String)
           .join(", ")
       );
@@ -198,12 +234,16 @@ export async function footballRequest(
 }
 
 export const footballApi = {
-  fixtures(params = {}, options = {}) {
+  fixtures(
+    params = {},
+    options = {}
+  ) {
     return request(
       "fixtures",
       params,
       {
-        ttl: 5 * 60 * 1000,
+        ttl:
+          5 * 60 * 1000,
         ...options,
       }
     );
@@ -212,17 +252,14 @@ export const footballApi = {
   today(options = {}) {
     const date =
       options.date ||
-      new Date()
-        .toISOString()
-        .slice(0, 10);
+      getLocalDate();
 
     return request(
       "fixtures",
+      { date },
       {
-        date,
-      },
-      {
-        ttl: 5 * 60 * 1000,
+        ttl:
+          5 * 60 * 1000,
         ...options,
       }
     );
@@ -231,57 +268,70 @@ export const footballApi = {
   live(options = {}) {
     return request(
       "fixtures",
+      { live: "all" },
       {
-        live: "all",
-      },
-      {
-        ttl: 60 * 1000,
+        ttl:
+          60 * 1000,
         ...options,
       }
     );
   },
 
-  fixture(id, options = {}) {
+  fixture(
+    id,
+    options = {}
+  ) {
     return request(
       "fixtures",
+      { id },
       {
-        id,
-      },
-      {
-        ttl: 60 * 1000,
+        ttl:
+          60 * 1000,
         ...options,
       }
     );
   },
 
-  standings(params = {}, options = {}) {
+  standings(
+    params = {},
+    options = {}
+  ) {
     return request(
       "standings",
       params,
       {
-        ttl: 60 * 60 * 1000,
+        ttl:
+          60 * 60 * 1000,
         ...options,
       }
     );
   },
 
-  teams(params = {}, options = {}) {
+  teams(
+    params = {},
+    options = {}
+  ) {
     return request(
       "teams",
       params,
       {
-        ttl: 24 * 60 * 60 * 1000,
+        ttl:
+          24 * 60 * 60 * 1000,
         ...options,
       }
     );
   },
 
-  players(params = {}, options = {}) {
+  players(
+    params = {},
+    options = {}
+  ) {
     return request(
       "players",
       params,
       {
-        ttl: 6 * 60 * 60 * 1000,
+        ttl:
+          6 * 60 * 60 * 1000,
         ...options,
       }
     );
@@ -295,7 +345,8 @@ export const footballApi = {
       "topscorers",
       params,
       {
-        ttl: 60 * 60 * 1000,
+        ttl:
+          60 * 60 * 1000,
         ...options,
       }
     );
@@ -309,7 +360,8 @@ export const footballApi = {
       "transfers",
       params,
       {
-        ttl: 12 * 60 * 60 * 1000,
+        ttl:
+          12 * 60 * 60 * 1000,
         ...options,
       }
     );
@@ -323,7 +375,8 @@ export const footballApi = {
       "leagues",
       params,
       {
-        ttl: 24 * 60 * 60 * 1000,
+        ttl:
+          24 * 60 * 60 * 1000,
         ...options,
       }
     );
