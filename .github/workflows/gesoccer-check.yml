@@ -24,17 +24,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ==========================================================
-      # 1. CHECKOUT
-      # ==========================================================
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      # ==========================================================
-      # 2. NODE.JS
-      # ==========================================================
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -44,17 +38,19 @@ jobs:
 
       - name: Show environment
         run: |
+          set -euo pipefail
+
           echo "======================================"
           echo "GeSoccer CI environment"
           echo "======================================"
+
           node --version
           npm --version
-          echo "OS: $(uname -a)"
-          echo ""
 
-      # ==========================================================
-      # 3. REQUIRED FILES
-      # ==========================================================
+          echo ""
+          echo "OS:"
+          uname -a
+
       - name: Check required files
         shell: bash
         run: |
@@ -73,6 +69,12 @@ jobs:
             "services/football/index.js"
             "app/(tabs)/index.js"
             "components/matches/MatchCard.js"
+            "components/GeSoccerLogo.js"
+            "theme/colors.js"
+            "theme/useAppTheme.js"
+            "locales/getLanguage.js"
+            "locales/i18n.js"
+            "locales/translations.js"
           )
 
           missing=0
@@ -86,47 +88,94 @@ jobs:
             fi
           done
 
-          echo ""
-
           if [ "$missing" -ne 0 ]; then
-            echo "ERROR: One or more required files are missing."
+            echo ""
+            echo "ERROR: Required files are missing."
             exit 1
           fi
 
+          echo ""
           echo "All required files are present."
 
-      # ==========================================================
-      # 4. JSON VALIDATION
-      # ==========================================================
       - name: Validate package.json
         run: |
           node <<'NODE'
           const fs = require("fs");
 
-          const file = "package.json";
+          const packageJson = JSON.parse(
+            fs.readFileSync("package.json", "utf8")
+          );
 
-          try {
-            const data = JSON.parse(fs.readFileSync(file, "utf8"));
-
-            if (!data.name) {
-              throw new Error("package.json: missing name");
-            }
-
-            if (!data.version) {
-              throw new Error("package.json: missing version");
-            }
-
-            if (!data.dependencies) {
-              throw new Error("package.json: missing dependencies");
-            }
-
-            console.log("package.json: OK");
-            console.log(`name: ${data.name}`);
-            console.log(`version: ${data.version}`);
-          } catch (error) {
-            console.error(`ERROR: ${error.message}`);
-            process.exit(1);
+          if (!packageJson.name) {
+            throw new Error("Missing package name");
           }
+
+          if (!packageJson.version) {
+            throw new Error("Missing package version");
+          }
+
+          if (!packageJson.dependencies) {
+            throw new Error("Missing dependencies");
+          }
+
+          const required = [
+            "expo",
+            "expo-font",
+            "expo-router",
+            "react",
+            "react-native",
+            "react-native-svg",
+            "@expo/vector-icons",
+            "@react-native-async-storage/async-storage"
+          ];
+
+          const missing = required.filter(
+            (name) => !packageJson.dependencies[name]
+          );
+
+          if (missing.length) {
+            throw new Error(
+              `Missing dependencies: ${missing.join(", ")}`
+            );
+          }
+
+          if (
+            packageJson.devDependencies?.postcss !==
+            "8.5.28"
+          ) {
+            throw new Error(
+              "postcss 8.5.28 must be installed as a dev dependency"
+            );
+          }
+
+          if (
+            packageJson.overrides?.postcss !==
+            "8.5.28"
+          ) {
+            throw new Error(
+              "postcss override must be 8.5.28"
+            );
+          }
+
+          console.log("package.json: OK");
+          console.log(
+            `Expo: ${packageJson.dependencies.expo}`
+          );
+          console.log(
+            `Expo Router: ${packageJson.dependencies["expo-router"]}`
+          );
+          console.log(
+            `React Native: ${packageJson.dependencies["react-native"]}`
+          );
+          console.log(
+            `react-native-svg: ${packageJson.dependencies["react-native-svg"]}`
+          );
+          console.log(
+            `expo-font: ${packageJson.dependencies["expo-font"]}`
+          );
+          console.log(
+            `PostCSS: ${packageJson.devDependencies.postcss}`
+          );
           NODE
 
       - name: Validate app.json
@@ -134,54 +183,72 @@ jobs:
           node <<'NODE'
           const fs = require("fs");
 
-          const file = "app.json";
+          const data = JSON.parse(
+            fs.readFileSync("app.json", "utf8")
+          );
 
-          try {
-            const data = JSON.parse(fs.readFileSync(file, "utf8"));
-            const expo = data.expo;
+          const expo = data.expo;
 
-            if (!expo) {
-              throw new Error("app.json: missing expo configuration");
-            }
-
-            if (!expo.name) {
-              throw new Error("app.json: missing expo.name");
-            }
-
-            if (!expo.slug) {
-              throw new Error("app.json: missing expo.slug");
-            }
-
-            if (!expo.version) {
-              throw new Error("app.json: missing expo.version");
-            }
-
-            if (!expo.android?.package) {
-              throw new Error(
-                "app.json: missing expo.android.package"
-              );
-            }
-
-            if (!expo.ios?.bundleIdentifier) {
-              throw new Error(
-                "app.json: missing expo.ios.bundleIdentifier"
-              );
-            }
-
-            console.log("app.json: OK");
-            console.log(`name: ${expo.name}`);
-            console.log(`slug: ${expo.slug}`);
-            console.log(`version: ${expo.version}`);
-            console.log(
-              `android.package: ${expo.android.package}`
+          if (!expo) {
+            throw new Error(
+              "app.json: missing expo configuration"
             );
-            console.log(
-              `ios.bundleIdentifier: ${expo.ios.bundleIdentifier}`
-            );
-          } catch (error) {
-            console.error(`ERROR: ${error.message}`);
-            process.exit(1);
           }
+
+          const checks = [
+            ["name", expo.name],
+            ["slug", expo.slug],
+            ["version", expo.version],
+            ["scheme", expo.scheme],
+            ["android.package", expo.android?.package],
+            [
+              "ios.bundleIdentifier",
+              expo.ios?.bundleIdentifier
+            ]
+          ];
+
+          for (const [name, value] of checks) {
+            if (!value) {
+              throw new Error(
+                `app.json: missing ${name}`
+              );
+            }
+          }
+
+          if (
+            expo.userInterfaceStyle !==
+            "automatic"
+          ) {
+            throw new Error(
+              "app.json: userInterfaceStyle must be automatic"
+            );
+          }
+
+          if (
+            !Array.isArray(expo.plugins) ||
+            !expo.plugins.includes("expo-router")
+          ) {
+            throw new Error(
+              "app.json: expo-router plugin is missing"
+            );
+          }
+
+          console.log("app.json: OK");
+          console.log(`Name: ${expo.name}`);
+          console.log(`Slug: ${expo.slug}`);
+          console.log(`Version: ${expo.version}`);
+          console.log(
+            `Android: ${expo.android.package}`
+          );
+          console.log(
+            `iOS: ${expo.ios.bundleIdentifier}`
+          );
+          console.log(
+            "Automatic appearance: OK"
+          );
+          console.log(
+            "Expo Router plugin: OK"
+          );
           NODE
 
       - name: Validate vercel.json
@@ -189,81 +256,85 @@ jobs:
           node <<'NODE'
           const fs = require("fs");
 
-          const file = "vercel.json";
+          const data = JSON.parse(
+            fs.readFileSync("vercel.json", "utf8")
+          );
 
-          try {
-            const data = JSON.parse(fs.readFileSync(file, "utf8"));
-
-            if (!data.functions) {
-              throw new Error("vercel.json: missing functions");
-            }
-
-            if (!data.functions["api/football.js"]) {
-              throw new Error(
-                "vercel.json: missing api/football.js configuration"
-              );
-            }
-
-            console.log("vercel.json: OK");
-            console.log("Vercel function: api/football.js");
-          } catch (error) {
-            console.error(`ERROR: ${error.message}`);
-            process.exit(1);
+          if (!data.functions) {
+            throw new Error(
+              "vercel.json: missing functions"
+            );
           }
+
+          const football =
+            data.functions["api/football.js"];
+
+          if (!football) {
+            throw new Error(
+              "vercel.json: api/football.js is missing"
+            );
+          }
+
+          if (
+            football.runtime !== "nodejs22.x"
+          ) {
+            throw new Error(
+              "vercel.json: api/football.js must use nodejs22.x"
+            );
+          }
+
+          console.log("vercel.json: OK");
           NODE
 
-      # ==========================================================
-      # 5. INSTALL DEPENDENCIES
-      # ==========================================================
-      # package-lock.json n'est actuellement pas présent dans le
-      # dépôt. On utilise donc npm install et non npm ci.
-      # ==========================================================
       - name: Install dependencies
         run: |
           npm install --no-audit --no-fund
 
-      # ==========================================================
-      # 6. EXPO DOCTOR
-      # ==========================================================
+      - name: Verify security override versions
+        run: |
+          set -euo pipefail
+
+          echo "======================================"
+          echo "Security dependency versions"
+          echo "======================================"
+
+          npm ls \
+            decode-uri-component \
+            image-size \
+            postcss \
+            uuid \
+            --all
+
       - name: Expo Doctor
         run: |
           npx expo-doctor
 
-      # ==========================================================
-      # 7. DEPENDENCY TREE
-      # ==========================================================
       - name: Check dependency tree
         run: |
           npm ls --depth=0
 
-      # ==========================================================
-      # 8. NPM AUDIT
-      # ==========================================================
       - name: Check npm security
         run: |
+          set -euo pipefail
+
+          echo "======================================"
+          echo "NPM SECURITY AUDIT"
+          echo "======================================"
+
           npm audit --audit-level=high
 
-      # ==========================================================
-      # 9. EXPO CONFIG
-      # ==========================================================
       - name: Check Expo configuration
         run: |
           npx expo config --type public
 
-      # ==========================================================
-      # 10. EXPO EXPORT / BUILD CHECK
-      # ==========================================================
-      # Le bundler Expo est utilisé pour détecter les vrais
-      # problèmes de syntaxe/imports dans l'application.
-      # ==========================================================
       - name: Build Expo web
         run: |
+          set -euo pipefail
+
           rm -rf dist
+
           npx expo export --platform web
 
-      # ==========================================================
-      # 11. VERIFY BUILD OUTPUT
-      # ==========================================================
       - name: Verify web build
         shell: bash
         run: |
@@ -274,105 +345,86 @@ jobs:
           echo "======================================"
 
           if [ ! -d "dist" ]; then
-            echo "ERROR: dist/ directory was not created."
+            echo "ERROR: dist directory was not created."
             exit 1
           fi
 
           file_count=$(find dist -type f | wc -l)
 
-          echo "Files generated: $file_count"
+          echo "Generated files: $file_count"
 
           if [ "$file_count" -eq 0 ]; then
-            echo "ERROR: dist/ is empty."
+            echo "ERROR: dist is empty."
             exit 1
           fi
 
-          if [ -f "dist/index.html" ]; then
-            echo "OK: dist/index.html"
-          else
-            echo "WARNING: dist/index.html was not found."
-            echo "This can be normal for some Expo Router configurations."
-          fi
+          echo "Expo web build: OK"
 
-          echo "Expo web build output exists."
-
-      # ==========================================================
-      # 12. VERIFY VERCEL FUNCTION
-      # ==========================================================
       - name: Validate Vercel football function
         shell: bash
         run: |
           set -euo pipefail
 
-          echo "======================================"
-          echo "Checking api/football.js"
-          echo "======================================"
+          test -f "api/football.js"
 
-          test -f api/football.js
+          required=(
+            "API_FOOTBALL_KEY"
+            "x-apisports-key"
+            "ALLOWED_ENDPOINTS"
+            "fixtures"
+            "standings"
+            "teams"
+            "players"
+            "topscorers"
+            "transfers"
+            "leagues"
+          )
 
-          grep -q "API_FOOTBALL_KEY" api/football.js
-          grep -q "x-apisports-key" api/football.js
-          grep -q "ALLOWED_ENDPOINTS" api/football.js
-          grep -q "fixtures" api/football.js
-          grep -q "standings" api/football.js
-          grep -q "teams" api/football.js
-          grep -q "players" api/football.js
-          grep -q "topscorers" api/football.js
-          grep -q "transfers" api/football.js
-          grep -q "leagues" api/football.js
+          for value in "${required[@]}"; do
+            if grep -q "$value" api/football.js; then
+              echo "OK      $value"
+            else
+              echo "ERROR   $value"
+              exit 1
+            fi
+          done
 
-          echo "api/football.js: OK"
+          echo ""
+          echo "Vercel football API: OK"
 
-      # ==========================================================
-      # 13. VERIFY FOOTBALL SERVICE
-      # ==========================================================
       - name: Validate football service
         shell: bash
         run: |
           set -euo pipefail
 
-          echo "======================================"
-          echo "Checking football service"
-          echo "======================================"
+          test -f "services/football/api.js"
+          test -f "services/football/index.js"
 
-          test -f services/football/api.js
-          test -f services/football/index.js
+          required=(
+            "EXPO_PUBLIC_GESOCCER_API_URL"
+            "AsyncStorage"
+            "footballApi"
+            "fixtures"
+            "standings"
+            "teams"
+            "players"
+            "topScorers"
+            "transfers"
+            "leagues"
+          )
 
-          grep -q "EXPO_PUBLIC_GESOCCER_API_URL" \
-            services/football/api.js
+          for value in "${required[@]}"; do
+            if grep -q "$value" services/football/api.js; then
+              echo "OK      $value"
+            else
+              echo "ERROR   $value"
+              exit 1
+            fi
+          done
 
-          grep -q "AsyncStorage" \
-            services/football/api.js
-
-          grep -q "footballApi" \
-            services/football/api.js
-
-          grep -q "fixtures" \
-            services/football/api.js
-
-          grep -q "standings" \
-            services/football/api.js
-
-          grep -q "teams" \
-            services/football/api.js
-
-          grep -q "players" \
-            services/football/api.js
-
-          grep -q "topScorers" \
-            services/football/api.js
-
-          grep -q "transfers" \
-            services/football/api.js
-
-          grep -q "leagues" \
-            services/football/api.js
-
+          echo ""
           echo "Football service: OK"
 
-      # ==========================================================
-      # 14. SEARCH FOR EXPOSED API KEYS
-      # ==========================================================
       - name: Check for exposed API keys
         shell: bash
         run: |
@@ -406,16 +458,12 @@ jobs:
 
           if [ "$found" -ne 0 ]; then
             echo ""
-            echo "ERROR: A possible API-Football secret was found."
-            echo "The API key must only exist in Vercel environment variables."
+            echo "ERROR: Possible API-Football secret detected."
             exit 1
           fi
 
-          echo "No obvious exposed API-Football secret found."
+          echo "No exposed API-Football key detected."
 
-      # ==========================================================
-      # 15. VERIFY ENVIRONMENT REFERENCES
-      # ==========================================================
       - name: Check environment configuration
         shell: bash
         run: |
@@ -434,25 +482,17 @@ jobs:
             echo ""
             echo "EXPO_PUBLIC_GESOCCER_API_URL reference: OK"
           else
-            echo "WARNING: EXPO_PUBLIC_GESOCCER_API_URL was not found."
+            echo ""
+            echo "ERROR: EXPO_PUBLIC_GESOCCER_API_URL reference missing."
+            exit 1
           fi
 
           echo ""
-          echo "API_FOOTBALL_KEY must be configured on Vercel."
-          echo "It must NOT be committed to GitHub."
+          echo "API_FOOTBALL_KEY must remain a Vercel secret."
+          echo "It must never be committed to GitHub."
 
-      # ==========================================================
-      # 16. CHECK FOR COMMON CONFIGURATION PROBLEMS
-      # ==========================================================
       - name: Check project configuration
-        shell: bash
         run: |
-          set -euo pipefail
-
-          echo "======================================"
-          echo "Checking project configuration"
-          echo "======================================"
-
           node <<'NODE'
           const fs = require("fs");
 
@@ -464,11 +504,12 @@ jobs:
             fs.readFileSync("app.json", "utf8")
           );
 
-          const expo = appJson.expo;
-          const dependencies = packageJson.dependencies || {};
+          const dependencies =
+            packageJson.dependencies || {};
 
           const requiredDependencies = [
             "expo",
+            "expo-font",
             "expo-router",
             "expo-blur",
             "expo-localization",
@@ -482,40 +523,42 @@ jobs:
             "@react-native-async-storage/async-storage"
           ];
 
-          const missing = requiredDependencies.filter(
-            (dependency) => !dependencies[dependency]
-          );
+          const missing =
+            requiredDependencies.filter(
+              (dependency) =>
+                !dependencies[dependency]
+            );
 
           if (missing.length > 0) {
-            console.error(
-              "Missing dependencies:",
-              missing.join(", ")
+            throw new Error(
+              `Missing dependencies: ${missing.join(", ")}`
             );
-            process.exit(1);
           }
 
-          if (expo.userInterfaceStyle !== "automatic") {
-            console.error(
-              "ERROR: app.json should use userInterfaceStyle: automatic"
+          if (
+            appJson.expo.userInterfaceStyle !==
+            "automatic"
+          ) {
+            throw new Error(
+              "Automatic system theme is not enabled."
             );
-            process.exit(1);
           }
 
-          if (!expo.plugins?.includes("expo-router")) {
-            console.error(
-              "ERROR: expo-router plugin is missing"
+          if (
+            !appJson.expo.plugins?.includes(
+              "expo-router"
+            )
+          ) {
+            throw new Error(
+              "Expo Router plugin is missing."
             );
-            process.exit(1);
           }
 
-          console.log("Required dependencies: OK");
-          console.log("Automatic theme: OK");
-          console.log("Expo Router plugin: OK");
+          console.log(
+            "Project configuration: OK"
+          );
           NODE
 
-      # ==========================================================
-      # 17. UPLOAD BUILD ARTIFACT
-      # ==========================================================
       - name: Upload Expo web build
         if: always()
         uses: actions/upload-artifact@v4
@@ -525,28 +568,29 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      # ==========================================================
-      # 18. FINAL RESULT
-      # ==========================================================
       - name: Final result
         if: success()
         run: |
           echo ""
           echo "=============================================="
-          echo "       GeSoccer CI CHECK PASSED"
+          echo "       GESOCCER CI CHECK PASSED"
           echo "=============================================="
           echo ""
           echo "✓ Required files"
-          echo "✓ JSON configuration"
+          echo "✓ package.json"
+          echo "✓ app.json"
+          echo "✓ vercel.json"
           echo "✓ Dependencies"
+          echo "✓ Security overrides"
           echo "✓ Expo Doctor"
           echo "✓ Dependency tree"
-          echo "✓ Security audit"
+          echo "✓ NPM security audit"
           echo "✓ Expo configuration"
           echo "✓ Expo web build"
-          echo "✓ Vercel function"
+          echo "✓ Vercel football API"
           echo "✓ Football service"
           echo "✓ API secret scan"
+          echo "✓ Project configuration"
           echo ""
           echo "GeSoccer passed all automated checks."
           echo "=============================================="
