@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - master
+
   pull_request:
     branches:
       - main
       - master
+
   workflow_dispatch:
 
 permissions:
@@ -16,7 +18,7 @@ permissions:
 
 jobs:
   check-and-build:
-    name: Check Expo / Metro / Web Build
+    name: GeSoccer Check
     runs-on: ubuntu-latest
 
     steps:
@@ -29,37 +31,52 @@ jobs:
           node-version: 20.19.4
           cache: npm
 
-      - name: Show Node and npm versions
+      - name: Show environment
         run: |
+          echo "===== Node ====="
           node --version
+
+          echo "===== npm ====="
           npm --version
+
+      - name: Remove previous installation
+        run: |
+          rm -rf node_modules
+          rm -rf dist
+          rm -rf .expo
+          rm -rf node_modules/.cache
+          rm -rf "$HOME/.expo"
+          rm -rf "$HOME/.cache/metro"
 
       - name: Install dependencies
         run: |
           npm install --no-audit --no-fund
 
-      - name: Verify Expo dependency tree
+      - name: Verify critical dependency versions
         run: |
           echo "===== Expo ====="
-          npm ls expo expo-router --depth=0 || true
+          npm ls expo expo-router --depth=0
 
           echo ""
           echo "===== React ====="
-          npm ls react react-dom react-native --depth=0 || true
+          npm ls react react-dom react-native --depth=0
 
           echo ""
           echo "===== Metro ====="
-          npm ls metro metro-config metro-resolver @expo/metro-config --all || true
+          npm ls metro metro-config metro-resolver @expo/metro-config
 
           echo ""
           echo "===== image-size ====="
-          npm ls image-size --all || true
+          npm ls image-size
 
-      - name: Inspect Expo Router unmatched asset
+          echo ""
+          echo "===== image-size package ====="
+          node -e "console.log(require('image-size/package.json').version)"
+
+      - name: Verify Expo Router asset
         run: |
           node <<'NODE'
           const fs = require("fs");
-          const path = require("path");
 
           const asset = require.resolve(
             "expo-router/assets/unmatched.png"
@@ -68,56 +85,64 @@ jobs:
           const buffer = fs.readFileSync(asset);
 
           console.log("Asset:", asset);
-          console.log("Size:", buffer.length, "bytes");
+          console.log("Bytes:", buffer.length);
           console.log(
             "PNG signature:",
             buffer.subarray(0, 8).toString("hex")
           );
 
-          if (
-            buffer.length < 8 ||
-            buffer.subarray(0, 8).toString("hex") !==
-              "89504e470d0a1a0a"
-          ) {
+          const expected = "89504e470d0a1a0a";
+          const actual = buffer.subarray(0, 8).toString("hex");
+
+          if (actual !== expected) {
             throw new Error(
               "expo-router/assets/unmatched.png n'est pas un PNG valide."
             );
           }
 
-          console.log("PNG asset OK.");
+          console.log("PNG asset validation: OK");
+          NODE
+
+      - name: Test image-size directly
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const path = require.resolve(
+            "expo-router/assets/unmatched.png"
+          );
+
+          const imageSize = require("image-size");
+          const buffer = fs.readFileSync(path);
+
+          const result = imageSize.imageSize(buffer);
+
+          console.log("Image:", path);
+          console.log("Dimensions:", result.width, "x", result.height);
+
+          if (!result.width || !result.height) {
+            throw new Error(
+              "image-size n'arrive pas à lire les dimensions du PNG."
+            );
+          }
+
+          console.log("image-size validation: OK");
           NODE
 
       - name: Expo Doctor
         run: |
           npx expo-doctor
 
-      - name: Clean Metro and Expo caches
+      - name: Validate Expo configuration
+        run: |
+          npx expo config --type public
+
+      - name: Clean build caches
         run: |
           rm -rf dist
           rm -rf .expo
           rm -rf node_modules/.cache
           rm -rf "$HOME/.expo"
           rm -rf "$HOME/.cache/metro"
-
-      - name: Verify Metro configuration
-        run: |
-          node <<'NODE'
-          const config = require("./metro.config.js");
-
-          console.log("Metro configuration loaded successfully.");
-
-          console.log(
-            "unstable_enablePackageExports:",
-            config.resolver?.unstable_enablePackageExports
-          );
-
-          console.log(
-            "experimentalImportSupport:",
-            config.transformer?.getTransformOptions
-              ? "configured"
-              : "default"
-          );
-          NODE
 
       - name: Export Expo web
         env:
@@ -127,28 +152,32 @@ jobs:
             --platform web \
             --clear
 
-      - name: Verify dist output
+      - name: Verify web build
         run: |
           if [ ! -d "dist" ]; then
-            echo "ERROR: dist/ n'a pas été généré."
+            echo "ERROR: le dossier dist/ n'existe pas."
             exit 1
           fi
 
           if [ ! -f "dist/index.html" ]; then
-            echo "ERROR: dist/index.html n'a pas été généré."
+            echo "ERROR: dist/index.html n'existe pas."
             exit 1
           fi
 
-          echo "===== dist ====="
-          find dist -maxdepth 2 -type f | sort | head -200
-
           echo ""
-          echo "Build Expo Web réussi."
+          echo "===== BUILD RÉUSSI ====="
+          echo ""
+
+          find dist \
+            -maxdepth 2 \
+            -type f \
+            | sort \
+            | head -200
 
       - name: Upload web build
-        if: always()
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: gesoccer-web-dist
           path: dist/
-          if-no-files-found: warn
+          if-no-files-found: error
