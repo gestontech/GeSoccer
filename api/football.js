@@ -1,7 +1,7 @@
 const API_FOOTBALL_URL =
   "https://v3.football.api-sports.io";
 
-const ALLOWED_ENDPOINTS = [
+const ALLOWED_ENDPOINTS = new Set([
   "fixtures",
   "standings",
   "teams",
@@ -9,12 +9,20 @@ const ALLOWED_ENDPOINTS = [
   "topscorers",
   "transfers",
   "leagues",
-];
+]);
 
 function isAllowedEndpoint(endpoint) {
-  return ALLOWED_ENDPOINTS.includes(
-    String(endpoint)
+  return ALLOWED_ENDPOINTS.has(
+    String(endpoint || "")
   );
+}
+
+function getQueryValue(value) {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
 }
 
 export default async function handler(
@@ -30,11 +38,16 @@ export default async function handler(
   }
 
   const endpoint =
-    req.query?.endpoint;
+    getQueryValue(
+      req.query?.endpoint
+    );
 
-  if (!isAllowedEndpoint(endpoint)) {
+  if (
+    !isAllowedEndpoint(endpoint)
+  ) {
     res.status(400).json({
-      error: "Invalid football endpoint",
+      error:
+        "Invalid football endpoint",
     });
 
     return;
@@ -69,13 +82,19 @@ export default async function handler(
     }
 
     if (Array.isArray(value)) {
-      value.forEach((item) => {
-        params.append(
-          key,
-          String(item)
-        );
-      });
-    } else {
+      for (const item of value) {
+        if (
+          item !== undefined &&
+          item !== null &&
+          item !== ""
+        ) {
+          params.append(
+            key,
+            String(item)
+          );
+        }
+      }
+    } else if (value !== "") {
       params.set(
         key,
         String(value)
@@ -83,18 +102,17 @@ export default async function handler(
     }
   }
 
-  const url =
+  const providerUrl =
     `${API_FOOTBALL_URL}/${endpoint}` +
     `?${params.toString()}`;
 
   try {
     const response =
-      await fetch(url, {
+      await fetch(providerUrl, {
         method: "GET",
         headers: {
           Accept:
             "application/json",
-
           "x-apisports-key":
             apiKey,
         },
