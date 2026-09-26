@@ -1,13 +1,16 @@
 import React from "react";
 import {
-  ScrollView,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import {
+  router,
+  useLocalSearchParams,
+} from "expo-router";
 
 import Glass from "../../components/glass/Glass";
 import { useAppTheme } from "../../theme/useAppTheme";
@@ -18,13 +21,17 @@ export default function PlayerDetailsScreen() {
 
   const playerName = String(id || "player")
     .replace(/-/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
 
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.background },
+        {
+          backgroundColor: colors.background,
+        },
       ]}
     >
       <View style={styles.header}>
@@ -49,24 +56,28 @@ export default function PlayerDetailsScreen() {
         <Text
           style={[
             styles.headerTitle,
-            { color: colors.text },
+            {
+              color: colors.text,
+            },
           ]}
         >
           Joueur
         </Text>
 
-        <View style={{ width: 42 }} />
+        <View style={styles.space} />
       </View>
 
       <ScrollView
-        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
         <Glass
           intensity={dark ? 35 : 55}
           style={[
             styles.profile,
-            { borderColor: colors.border },
+            {
+              borderColor: colors.border,
+            },
           ]}
         >
           <View
@@ -87,7 +98,9 @@ export default function PlayerDetailsScreen() {
           <Text
             style={[
               styles.name,
-              { color: colors.text },
+              {
+                color: colors.text,
+              },
             ]}
           >
             {playerName}
@@ -96,7 +109,9 @@ export default function PlayerDetailsScreen() {
           <Text
             style={[
               styles.role,
-              { color: colors.textSecondary },
+              {
+                color: colors.textSecondary,
+              },
             ]}
           >
             Profil joueur
@@ -107,13 +122,17 @@ export default function PlayerDetailsScreen() {
           intensity={dark ? 30 : 50}
           style={[
             styles.section,
-            { borderColor: colors.border },
+            {
+              borderColor: colors.border,
+            },
           ]}
         >
           <Text
             style={[
               styles.sectionTitle,
-              { color: colors.text },
+              {
+                color: colors.text,
+              },
             ]}
           >
             Statistiques
@@ -122,11 +141,13 @@ export default function PlayerDetailsScreen() {
           <Text
             style={[
               styles.empty,
-              { color: colors.textSecondary },
+              {
+                color: colors.textSecondary,
+              },
             ]}
           >
             Les statistiques détaillées seront disponibles
-            avec la connexion aux données football.
+            avec les données football réelles.
           </Text>
         </Glass>
       </ScrollView>
@@ -158,6 +179,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "900",
+  },
+
+  space: {
+    width: 42,
   },
 
   content: {
