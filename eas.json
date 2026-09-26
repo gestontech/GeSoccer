@@ -4,21 +4,30 @@
   },
   "build": {
     "development": {
-      "developmentClient": false,
+      "developmentClient": true,
       "distribution": "internal",
-      "android": {
-        "buildType": "apk"
+      "env": {
+        "EXPO_PUBLIC_GESOCCER_API_URL": "https://ge-soccer.vercel.app/api/football"
       }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "distribution": "internal"
+      },
+      "env": {
+        "EXPO_PUBLIC_GESOCCER_API_URL": "https://ge-soccer.vercel.app/api/football"
       }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_GESOCCER_API_URL": "https://ge-soccer.vercel.app/api/football"
       }
     }
   }
