@@ -56,10 +56,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "======================================"
-          echo "Checking required files"
-          echo "======================================"
-
           files=(
             "package.json"
             "app.json"
@@ -68,6 +64,7 @@ jobs:
             "services/football/api.js"
             "services/football/index.js"
             "app/(tabs)/index.js"
+            "app/+not-found.js"
             "components/matches/MatchCard.js"
             "components/GeSoccerLogo.js"
             "theme/colors.js"
@@ -123,8 +120,10 @@ jobs:
             "expo-font",
             "expo-router",
             "react",
+            "react-dom",
             "react-native",
             "react-native-svg",
+            "react-native-web",
             "@expo/vector-icons",
             "@react-native-async-storage/async-storage"
           ];
@@ -168,7 +167,19 @@ jobs:
           );
 
           console.log(
+            `React: ${packageJson.dependencies.react}`
+          );
+
+          console.log(
+            `React DOM: ${packageJson.dependencies["react-dom"]}`
+          );
+
+          console.log(
             `React Native: ${packageJson.dependencies["react-native"]}`
+          );
+
+          console.log(
+            `React Native Web: ${packageJson.dependencies["react-native-web"]}`
           );
 
           console.log(
@@ -177,14 +188,6 @@ jobs:
 
           console.log(
             `expo-font: ${packageJson.dependencies["expo-font"]}`
-          );
-
-          console.log(
-            `react-dom: ${packageJson.dependencies["react-dom"]}`
-          );
-
-          console.log(
-            `react-native-web: ${packageJson.dependencies["react-native-web"]}`
           );
 
           console.log(
@@ -248,25 +251,6 @@ jobs:
           }
 
           console.log("app.json: OK");
-          console.log(`Name: ${expo.name}`);
-          console.log(`Slug: ${expo.slug}`);
-          console.log(`Version: ${expo.version}`);
-
-          console.log(
-            `Android: ${expo.android.package}`
-          );
-
-          console.log(
-            `iOS: ${expo.ios.bundleIdentifier}`
-          );
-
-          console.log(
-            "Automatic appearance: OK"
-          );
-
-          console.log(
-            "Expo Router plugin: OK"
-          );
           NODE
 
       - name: Validate vercel.json
@@ -278,14 +262,8 @@ jobs:
             fs.readFileSync("vercel.json", "utf8")
           );
 
-          if (!data.functions) {
-            throw new Error(
-              "vercel.json: missing functions"
-            );
-          }
-
           const football =
-            data.functions["api/football.js"];
+            data.functions?.["api/football.js"];
 
           if (!football) {
             throw new Error(
@@ -308,13 +286,9 @@ jobs:
         run: |
           npm install --no-audit --no-fund
 
-      - name: Verify security override versions
+      - name: Verify dependency tree
         run: |
           set -euo pipefail
-
-          echo "======================================"
-          echo "Security dependency versions"
-          echo "======================================"
 
           npm ls \
             decode-uri-component \
@@ -323,33 +297,59 @@ jobs:
             uuid \
             --all
 
+          npm ls --depth=0
+
       - name: Expo Doctor
         run: |
           npx expo-doctor
 
-      - name: Check dependency tree
-        run: |
-          npm ls --depth=0
-
       - name: Check npm security
         run: |
-          set -euo pipefail
-
-          echo "======================================"
-          echo "NPM SECURITY AUDIT"
-          echo "======================================"
-
           npm audit --audit-level=high
 
       - name: Check Expo configuration
         run: |
           npx expo config --type public
 
-      - name: Build Expo web
+      - name: Clean Expo and Metro cache
+        shell: bash
         run: |
           set -euo pipefail
 
+          echo "Cleaning previous Expo/Metro output..."
+
           rm -rf dist
+          rm -rf .expo
+          rm -rf node_modules/.cache
+
+          echo "Cache cleanup completed."
+
+      - name: Verify Node runtime
+        run: |
+          node <<'NODE'
+          const major = Number(
+            process.versions.node.split(".")[0]
+          );
+
+          const version = process.versions.node;
+
+          console.log(`Node.js: ${version}`);
+
+          if (major !== 20) {
+            throw new Error(
+              `GeSoccer web build requires Node 20.x, found ${version}`
+            );
+          }
+
+          console.log("Node runtime: OK");
+          NODE
+
+      - name: Build Expo web
+        shell: bash
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: |
+          set -euo pipefail
 
           echo "======================================"
           echo "Building GeSoccer Web"
@@ -369,7 +369,9 @@ jobs:
           echo ""
           echo "Starting Expo web export..."
 
-          npx expo export --platform web
+          npx expo export \
+            --platform web \
+            --clear
 
       - name: Verify web build
         shell: bash
@@ -467,10 +469,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "======================================"
-          echo "Checking for exposed API keys"
-          echo "======================================"
-
           found=0
 
           if grep -RniE \
@@ -506,10 +504,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "======================================"
-          echo "Environment configuration"
-          echo "======================================"
-
           if grep -Rni \
             --exclude-dir=.git \
             --exclude-dir=node_modules \
@@ -529,8 +523,7 @@ jobs:
           fi
 
           echo ""
-          echo "API_FOOTBALL_KEY must remain a Vercel secret."
-          echo "It must never be committed to GitHub."
+          echo "API_FOOTBALL_KEY remains server-side only."
 
       - name: Check project configuration
         run: |
@@ -548,7 +541,7 @@ jobs:
           const dependencies =
             packageJson.dependencies || {};
 
-          const requiredDependencies = [
+          const required = [
             "expo",
             "expo-font",
             "expo-router",
@@ -566,11 +559,9 @@ jobs:
             "@react-native-async-storage/async-storage"
           ];
 
-          const missing =
-            requiredDependencies.filter(
-              (dependency) =>
-                !dependencies[dependency]
-            );
+          const missing = required.filter(
+            (name) => !dependencies[name]
+          );
 
           if (missing.length > 0) {
             throw new Error(
@@ -624,11 +615,10 @@ jobs:
           echo "✓ app.json"
           echo "✓ vercel.json"
           echo "✓ Dependencies"
-          echo "✓ Security overrides"
           echo "✓ Expo Doctor"
-          echo "✓ Dependency tree"
           echo "✓ NPM security audit"
           echo "✓ Expo configuration"
+          echo "✓ Metro/Expo cache cleanup"
           echo "✓ Expo web build"
           echo "✓ Vercel football API"
           echo "✓ Football service"
