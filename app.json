@@ -8,7 +8,8 @@
     "scheme": "gesoccer",
 
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-dev-client"
     ],
 
     "experiments": {
