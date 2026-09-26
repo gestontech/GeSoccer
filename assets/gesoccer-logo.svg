@@ -1,0 +1,113 @@
+<svg
+  width="280"
+  height="100"
+  viewBox="0 0 280 100"
+  xmlns="http://www.w3.org/2000/svg"
+>
+
+  <circle
+    cx="50"
+    cy="50"
+    r="45"
+    fill="#4B842F"
+  />
+
+  <circle
+    cx="50"
+    cy="50"
+    r="39"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="2"
+    opacity="0.8"
+  />
+
+  <path
+    d="
+      M18 64
+      C30 20 73 14 88 43
+      C96 59 77 82 53 85
+      C35 87 21 78 18 64
+    "
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="4"
+    stroke-linecap="round"
+  />
+
+  <circle
+    cx="50"
+    cy="50"
+    r="18"
+    fill="#FFFFFF"
+  />
+
+  <polygon
+    points="
+      50,39
+      60,46
+      56,58
+      44,58
+      40,46
+    "
+    fill="#4B842F"
+  />
+
+  <path
+    d="M50 39 L50 31"
+    stroke="#FFFFFF"
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+
+  <path
+    d="M60 46 L70 42"
+    stroke="#FFFFFF"
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+
+  <path
+    d="M56 58 L62 67"
+    stroke="#FFFFFF"
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+
+  <path
+    d="M44 58 L38 67"
+    stroke="#FFFFFF"
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+
+  <path
+    d="M40 46 L30 42"
+    stroke="#FFFFFF"
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+
+  <text
+    x="108"
+    y="61"
+    fill="#4B842F"
+    font-family="Arial, sans-serif"
+    font-size="38"
+    font-weight="900"
+  >
+    Ge
+  </text>
+
+  <text
+    x="163"
+    y="61"
+    fill="#69A951"
+    font-family="Arial, sans-serif"
+    font-size="38"
+    font-weight="900"
+  >
+    Soccer
+  </text>
+
+</svg>
