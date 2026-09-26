@@ -3,9 +3,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const API_URL =
   process.env.EXPO_PUBLIC_GESOCCER_API_URL || "";
 
+const CACHE_PREFIX = "gesoccer:football:v2:";
+
 const DEFAULT_TTL = 5 * 60 * 1000;
 
-const CACHE_PREFIX = "gesoccer:api:v1:";
+function cleanBaseUrl(url) {
+  return String(url || "").replace(/\/+$/, "");
+}
 
 function buildCacheKey(endpoint, params = {}) {
   const query = Object.keys(params)
@@ -33,7 +37,8 @@ async function readCache(key) {
 
     if (
       !cached ||
-      typeof cached.timestamp !== "number"
+      typeof cached.timestamp !== "number" ||
+      typeof cached.ttl !== "number"
     ) {
       return null;
     }
@@ -62,13 +67,12 @@ async function writeCache(key, data, ttl) {
       })
     );
   } catch {
-    // Le cache ne doit jamais empêcher l'application
-    // de fonctionner.
+    // Le cache ne doit jamais bloquer l'application.
   }
 }
 
-function buildUrl(endpoint, params = {}) {
-  const base = API_URL.replace(/\/$/, "");
+function buildUrl(params = {}) {
+  const base = cleanBaseUrl(API_URL);
 
   const query = Object.keys(params)
     .filter(
@@ -85,12 +89,10 @@ function buildUrl(endpoint, params = {}) {
     )
     .join("&");
 
-  return `${base}/football/${endpoint}${
-    query ? `?${query}` : ""
-  }`;
+  return `${base}${query ? `?${query}` : ""}`;
 }
 
-export async function footballRequest(
+async function request(
   endpoint,
   params = {},
   options = {}
@@ -106,59 +108,98 @@ export async function footballRequest(
       ? options.ttl
       : DEFAULT_TTL;
 
-  const key = buildCacheKey(endpoint, params);
+  const cacheKey = buildCacheKey(
+    endpoint,
+    params
+  );
 
   if (!options.forceRefresh) {
-    const cached = await readCache(key);
+    const cached = await readCache(cacheKey);
 
     if (cached !== null) {
       return cached;
     }
   }
 
-  const url = buildUrl(endpoint, params);
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
+  const url = buildUrl({
+    endpoint,
+    ...params,
   });
 
-  if (!response.ok) {
-    let message = "";
+  const controller = new AbortController();
+
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, options.timeout || 15000);
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    const text = await response.text();
+
+    let data;
 
     try {
-      message = await response.text();
+      data = JSON.parse(text);
     } catch {
-      message = "";
+      data = {
+        error: text || "Réponse invalide du serveur.",
+      };
     }
 
-    throw new Error(
-      `GeSoccer API ${response.status}${
-        message ? `: ${message}` : ""
-      }`
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+          data?.message ||
+          `GeSoccer API ${response.status}`
+      );
+    }
+
+    if (
+      data &&
+      data.errors &&
+      Object.keys(data.errors).length > 0
+    ) {
+      throw new Error(
+        Object.values(data.errors)
+          .map(String)
+          .join(", ")
+      );
+    }
+
+    await writeCache(
+      cacheKey,
+      data,
+      ttl
     );
+
+    return data;
+  } finally {
+    clearTimeout(timeout);
   }
+}
 
-  const data = await response.json();
-
-  await writeCache(key, data, ttl);
-
-  return data;
+export async function footballRequest(
+  endpoint,
+  params = {},
+  options = {}
+) {
+  return request(
+    endpoint,
+    params,
+    options
+  );
 }
 
 export const footballApi = {
-  /**
-   * Matchs d'une journée.
-   *
-   * Exemple:
-   * footballApi.fixtures({
-   *   date: "2026-09-27"
-   * })
-   */
   fixtures(params = {}, options = {}) {
-    return footballRequest(
+    return request(
       "fixtures",
       params,
       {
@@ -168,29 +209,40 @@ export const footballApi = {
     );
   },
 
-  /**
-   * Matchs actuellement en direct.
-   *
-   * Cache très court pour limiter les requêtes.
-   */
-  live(options = {}) {
-    return footballRequest(
+  today(options = {}) {
+    const date =
+      options.date ||
+      new Date()
+        .toISOString()
+        .slice(0, 10);
+
+    return request(
       "fixtures",
       {
-        live: "all",
+        date,
       },
       {
-        ttl: 30 * 1000,
+        ttl: 5 * 60 * 1000,
         ...options,
       }
     );
   },
 
-  /**
-   * Détails d'un match.
-   */
+  live(options = {}) {
+    return request(
+      "fixtures",
+      {
+        live: "all",
+      },
+      {
+        ttl: 60 * 1000,
+        ...options,
+      }
+    );
+  },
+
   fixture(id, options = {}) {
-    return footballRequest(
+    return request(
       "fixtures",
       {
         id,
@@ -202,11 +254,8 @@ export const footballApi = {
     );
   },
 
-  /**
-   * Classement d'une compétition.
-   */
   standings(params = {}, options = {}) {
-    return footballRequest(
+    return request(
       "standings",
       params,
       {
@@ -216,11 +265,8 @@ export const footballApi = {
     );
   },
 
-  /**
-   * Équipes.
-   */
   teams(params = {}, options = {}) {
-    return footballRequest(
+    return request(
       "teams",
       params,
       {
@@ -230,11 +276,8 @@ export const footballApi = {
     );
   },
 
-  /**
-   * Joueurs.
-   */
   players(params = {}, options = {}) {
-    return footballRequest(
+    return request(
       "players",
       params,
       {
@@ -244,14 +287,11 @@ export const footballApi = {
     );
   },
 
-  /**
-   * Meilleurs buteurs.
-   */
   topScorers(
     params = {},
     options = {}
   ) {
-    return footballRequest(
+    return request(
       "topscorers",
       params,
       {
@@ -261,14 +301,11 @@ export const footballApi = {
     );
   },
 
-  /**
-   * Transferts d'un joueur ou d'une équipe.
-   */
   transfers(
     params = {},
     options = {}
   ) {
-    return footballRequest(
+    return request(
       "transfers",
       params,
       {
@@ -278,14 +315,11 @@ export const footballApi = {
     );
   },
 
-  /**
-   * Compétitions.
-   */
   leagues(
     params = {},
     options = {}
   ) {
-    return footballRequest(
+    return request(
       "leagues",
       params,
       {
