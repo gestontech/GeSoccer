@@ -39,12 +39,11 @@ jobs:
           echo "===== npm ====="
           npm --version
 
-      - name: Remove previous installation
+      - name: Clean previous installation
         run: |
           rm -rf node_modules
           rm -rf dist
           rm -rf .expo
-          rm -rf node_modules/.cache
           rm -rf "$HOME/.expo"
           rm -rf "$HOME/.cache/metro"
 
@@ -52,7 +51,7 @@ jobs:
         run: |
           npm install --no-audit --no-fund
 
-      - name: Verify critical dependency versions
+      - name: Verify Expo dependencies
         run: |
           echo "===== Expo ====="
           npm ls expo expo-router --depth=0
@@ -63,15 +62,75 @@ jobs:
 
           echo ""
           echo "===== Metro ====="
-          npm ls metro metro-config metro-resolver @expo/metro-config
+          npm ls \
+            metro \
+            metro-babel-transformer \
+            metro-cache \
+            metro-cache-key \
+            metro-config \
+            metro-core \
+            metro-file-map \
+            metro-minify-terser \
+            metro-resolver \
+            metro-runtime \
+            metro-source-map \
+            metro-symbolicate \
+            metro-transform-plugins \
+            metro-transform-worker
 
-          echo ""
-          echo "===== image-size ====="
-          npm ls image-size
+      - name: Verify Metro versions
+        run: |
+          node <<'NODE'
+          const packages = [
+            "metro",
+            "metro-babel-transformer",
+            "metro-cache",
+            "metro-cache-key",
+            "metro-config",
+            "metro-core",
+            "metro-file-map",
+            "metro-minify-terser",
+            "metro-resolver",
+            "metro-runtime",
+            "metro-source-map",
+            "metro-symbolicate",
+            "metro-transform-plugins",
+            "metro-transform-worker"
+          ];
 
-          echo ""
-          echo "===== image-size package ====="
-          node -e "console.log(require('image-size/package.json').version)"
+          const expected = "0.83.8";
+
+          let failed = false;
+
+          for (const name of packages) {
+            const pkg = require(`${name}/package.json`);
+
+            console.log(`${name}: ${pkg.version}`);
+
+            if (pkg.version !== expected) {
+              console.error(
+                `ERROR: ${name} doit être ${expected}, trouvé ${pkg.version}`
+              );
+              failed = true;
+            }
+          }
+
+          if (failed) {
+            process.exit(1);
+          }
+
+          console.log("");
+          console.log("Metro 0.83.8: OK");
+          NODE
+
+      - name: Verify image-size is removed
+        run: |
+          if npm ls image-size --all 2>/dev/null; then
+            echo "ERROR: image-size est encore présent dans l'arbre Metro."
+            exit 1
+          fi
+
+          echo "image-size absent: OK"
 
       - name: Verify Expo Router asset
         run: |
@@ -86,13 +145,13 @@ jobs:
 
           console.log("Asset:", asset);
           console.log("Bytes:", buffer.length);
-          console.log(
-            "PNG signature:",
-            buffer.subarray(0, 8).toString("hex")
-          );
 
           const expected = "89504e470d0a1a0a";
-          const actual = buffer.subarray(0, 8).toString("hex");
+          const actual = buffer
+            .subarray(0, 8)
+            .toString("hex");
+
+          console.log("PNG signature:", actual);
 
           if (actual !== expected) {
             throw new Error(
@@ -100,32 +159,29 @@ jobs:
             );
           }
 
-          console.log("PNG asset validation: OK");
+          console.log("Expo Router PNG: OK");
           NODE
 
-      - name: Test image-size directly
+      - name: Verify Metro configuration
         run: |
           node <<'NODE'
-          const fs = require("fs");
-          const path = require.resolve(
-            "expo-router/assets/unmatched.png"
-          );
+          const config = require("./metro.config.js");
 
-          const imageSize = require("image-size");
-          const buffer = fs.readFileSync(path);
-
-          const result = imageSize.imageSize(buffer);
-
-          console.log("Image:", path);
-          console.log("Dimensions:", result.width, "x", result.height);
-
-          if (!result.width || !result.height) {
+          if (!config) {
             throw new Error(
-              "image-size n'arrive pas à lire les dimensions du PNG."
+              "metro.config.js n'a pas pu être chargé."
             );
           }
 
-          console.log("image-size validation: OK");
+          if (!config.resolver) {
+            throw new Error(
+              "Metro resolver absent."
+            );
+          }
+
+          console.log(
+            "Metro configuration loaded successfully."
+          );
           NODE
 
       - name: Expo Doctor
@@ -147,6 +203,7 @@ jobs:
       - name: Export Expo web
         env:
           EXPO_NO_DOTENV: "1"
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           npx expo export \
             --platform web \
@@ -165,7 +222,9 @@ jobs:
           fi
 
           echo ""
-          echo "===== BUILD RÉUSSI ====="
+          echo "======================================"
+          echo "       GE SOCCER WEB BUILD OK"
+          echo "======================================"
           echo ""
 
           find dist \
@@ -181,3 +240,4 @@ jobs:
           name: gesoccer-web-dist
           path: dist/
           if-no-files-found: error
+          retention-days: 7
