@@ -1,8 +1,5 @@
 import React from "react";
-import {
-  Link,
-  Stack,
-} from "expo-router";
+import { Link, Stack } from "expo-router";
 import {
   StyleSheet,
   Text,
@@ -26,7 +23,8 @@ export default function NotFoundScreen() {
         </Text>
 
         <Text style={styles.message}>
-          Cette page n’existe pas ou n’est plus disponible.
+          Cette page n’existe pas ou n’est plus
+          disponible.
         </Text>
 
         <Link href="/" style={styles.link}>
