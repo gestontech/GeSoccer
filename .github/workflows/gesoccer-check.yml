@@ -157,39 +157,30 @@ jobs:
           }
 
           console.log("package.json: OK");
-
           console.log(
             `Expo: ${packageJson.dependencies.expo}`
           );
-
           console.log(
             `Expo Router: ${packageJson.dependencies["expo-router"]}`
           );
-
           console.log(
             `React: ${packageJson.dependencies.react}`
           );
-
           console.log(
             `React DOM: ${packageJson.dependencies["react-dom"]}`
           );
-
           console.log(
             `React Native: ${packageJson.dependencies["react-native"]}`
           );
-
           console.log(
             `React Native Web: ${packageJson.dependencies["react-native-web"]}`
           );
-
           console.log(
             `react-native-svg: ${packageJson.dependencies["react-native-svg"]}`
           );
-
           console.log(
             `expo-font: ${packageJson.dependencies["expo-font"]}`
           );
-
           console.log(
             `PostCSS: ${packageJson.devDependencies.postcss}`
           );
