@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.4
           cache: npm
           cache-dependency-path: package.json
 
@@ -158,21 +158,35 @@ jobs:
           }
 
           console.log("package.json: OK");
+
           console.log(
             `Expo: ${packageJson.dependencies.expo}`
           );
+
           console.log(
             `Expo Router: ${packageJson.dependencies["expo-router"]}`
           );
+
           console.log(
             `React Native: ${packageJson.dependencies["react-native"]}`
           );
+
           console.log(
             `react-native-svg: ${packageJson.dependencies["react-native-svg"]}`
           );
+
           console.log(
             `expo-font: ${packageJson.dependencies["expo-font"]}`
           );
+
+          console.log(
+            `react-dom: ${packageJson.dependencies["react-dom"]}`
+          );
+
+          console.log(
+            `react-native-web: ${packageJson.dependencies["react-native-web"]}`
+          );
+
           console.log(
             `PostCSS: ${packageJson.devDependencies.postcss}`
           );
@@ -237,15 +251,19 @@ jobs:
           console.log(`Name: ${expo.name}`);
           console.log(`Slug: ${expo.slug}`);
           console.log(`Version: ${expo.version}`);
+
           console.log(
             `Android: ${expo.android.package}`
           );
+
           console.log(
             `iOS: ${expo.ios.bundleIdentifier}`
           );
+
           console.log(
             "Automatic appearance: OK"
           );
+
           console.log(
             "Expo Router plugin: OK"
           );
@@ -333,6 +351,24 @@ jobs:
 
           rm -rf dist
 
+          echo "======================================"
+          echo "Building GeSoccer Web"
+          echo "======================================"
+
+          echo "Node:"
+          node --version
+
+          echo ""
+          echo "NPM:"
+          npm --version
+
+          echo ""
+          echo "Expo:"
+          npx expo --version
+
+          echo ""
+          echo "Starting Expo web export..."
+
           npx expo export --platform web
 
       - name: Verify web build
@@ -358,6 +394,7 @@ jobs:
             exit 1
           fi
 
+          echo ""
           echo "Expo web build: OK"
 
       - name: Validate Vercel football function
@@ -479,12 +516,16 @@ jobs:
             --exclude-dir=dist \
             "EXPO_PUBLIC_GESOCCER_API_URL" \
             services api app package.json; then
+
             echo ""
             echo "EXPO_PUBLIC_GESOCCER_API_URL reference: OK"
+
           else
+
             echo ""
             echo "ERROR: EXPO_PUBLIC_GESOCCER_API_URL reference missing."
             exit 1
+
           fi
 
           echo ""
@@ -515,10 +556,12 @@ jobs:
             "expo-localization",
             "expo-status-bar",
             "react",
+            "react-dom",
             "react-native",
             "react-native-safe-area-context",
             "react-native-screens",
             "react-native-svg",
+            "react-native-web",
             "@expo/vector-icons",
             "@react-native-async-storage/async-storage"
           ];
@@ -590,6 +633,7 @@ jobs:
           echo "✓ Vercel football API"
           echo "✓ Football service"
           echo "✓ API secret scan"
+          echo "✓ Environment configuration"
           echo "✓ Project configuration"
           echo ""
           echo "GeSoccer passed all automated checks."
