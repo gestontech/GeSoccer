@@ -1,154 +1,682 @@
-import React from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import {
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 
-import Glass from "../../components/glass/Glass";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+
 import MatchCard from "../../components/matches/MatchCard";
-import { matches } from "../../data/matches";
-import { getTranslations } from "../../locales/i18n";
+import { footballApi } from "../../services/football";
 import { useAppTheme } from "../../theme/useAppTheme";
+import { getTranslations } from "../../locales/i18n";
+
+function formatDate(date) {
+  const year = date.getFullYear();
+
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeFixture(item) {
+  const fixture = item?.fixture || {};
+  const teams = item?.teams || {};
+  const goals = item?.goals || {};
+  const league = item?.league || {};
+  const status = fixture?.status || {};
+
+  return {
+    id: String(
+      fixture.id ||
+        `${teams?.home?.name || "home"}-${teams?.away?.name || "away"}`
+    ),
+
+    homeTeam:
+      teams?.home?.name ||
+      "Équipe domicile",
+
+    awayTeam:
+      teams?.away?.name ||
+      "Équipe extérieure",
+
+    homeLogo:
+      teams?.home?.logo ||
+      null,
+
+    awayLogo:
+      teams?.away?.logo ||
+      null,
+
+    homeScore:
+      goals?.home ?? null,
+
+    awayScore:
+      goals?.away ?? null,
+
+    competition:
+      league?.name ||
+      "Football",
+
+    competitionLogo:
+      league?.logo ||
+      null,
+
+    country:
+      league?.country ||
+      "",
+
+    date:
+      fixture?.date ||
+      null,
+
+    elapsed:
+      status?.elapsed ??
+      null,
+
+    shortStatus:
+      status?.short ||
+      "",
+
+    longStatus:
+      status?.long ||
+      "",
+
+    venue:
+      fixture?.venue?.name ||
+      null,
+
+    referee:
+      fixture?.referee ||
+      null,
+  };
+}
+
+function isLiveMatch(match) {
+  const liveStatuses = [
+    "1H",
+    "2H",
+    "ET",
+    "P",
+    "LIVE",
+  ];
+
+  return liveStatuses.includes(
+    match.shortStatus
+  );
+}
+
+function isFinished(match) {
+  return [
+    "FT",
+    "AET",
+    "PEN",
+  ].includes(
+    match.shortStatus
+  );
+}
 
 export default function HomeScreen() {
-  const { colors, dark } = useAppTheme();
-  const { t } = getTranslations();
+  const { dark, colors, brand } =
+    useAppTheme();
+
+  const { t } =
+    getTranslations();
+
+  const [matches, setMatches] =
+    useState([]);
+
+  const [liveMatches, setLiveMatches] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [lastUpdate, setLastUpdate] =
+    useState(null);
+
+  const loadToday = useCallback(
+    async ({
+      forceRefresh = false,
+    } = {}) => {
+      try {
+        setError("");
+
+        const response =
+          await footballApi.today({
+            forceRefresh,
+          });
+
+        const list = Array.isArray(
+          response?.response
+        )
+          ? response.response
+          : [];
+
+        const normalized =
+          list.map(normalizeFixture);
+
+        setMatches(normalized);
+        setLastUpdate(new Date());
+      } catch (err) {
+        setError(
+          err?.message ||
+            "Impossible de charger les matchs."
+        );
+      }
+    },
+    []
+  );
+
+  const loadLive = useCallback(
+    async ({
+      forceRefresh = false,
+    } = {}) => {
+      try {
+        const response =
+          await footballApi.live({
+            forceRefresh,
+          });
+
+        const list = Array.isArray(
+          response?.response
+        )
+          ? response.response
+          : [];
+
+        const normalized =
+          list
+            .map(normalizeFixture)
+            .filter(isLiveMatch);
+
+        setLiveMatches(normalized);
+        setLastUpdate(new Date());
+      } catch (err) {
+        // Le Live ne doit pas supprimer
+        // les matchs déjà affichés.
+        console.log(
+          "GeSoccer Live:",
+          err?.message
+        );
+      }
+    },
+    []
+  );
+
+  const loadAll = useCallback(
+    async ({
+      forceRefresh = false,
+    } = {}) => {
+      setLoading(true);
+
+      await Promise.all([
+        loadToday({
+          forceRefresh,
+        }),
+
+        loadLive({
+          forceRefresh,
+        }),
+      ]);
+
+      setLoading(false);
+    },
+    [loadLive, loadToday]
+  );
+
+  useEffect(() => {
+    loadAll();
+
+    const interval =
+      setInterval(() => {
+        loadLive();
+      }, 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [loadAll, loadLive]);
+
+  const onRefresh = useCallback(
+    async () => {
+      setRefreshing(true);
+
+      await loadAll({
+        forceRefresh: true,
+      });
+
+      setRefreshing(false);
+    },
+    [loadAll]
+  );
+
+  const todayDate = useMemo(
+    () => formatDate(new Date()),
+    []
+  );
+
+  const sortedMatches = useMemo(
+    () => {
+      return [...matches].sort(
+        (a, b) => {
+          const aDate =
+            new Date(a.date || 0)
+              .getTime();
+
+          const bDate =
+            new Date(b.date || 0)
+              .getTime();
+
+          return aDate - bDate;
+        }
+      );
+    },
+    [matches]
+  );
+
+  const displayedMatches =
+    sortedMatches.filter(
+      (match) =>
+        !liveMatches.some(
+          (live) =>
+            live.id === match.id
+        )
+    );
+
+  const hasData =
+    liveMatches.length > 0 ||
+    displayedMatches.length > 0;
 
   return (
-    <ScrollView
+    <View
       style={[
         styles.container,
         {
-          backgroundColor: colors.background,
+          backgroundColor:
+            colors.background,
         },
       ]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
     >
-      <View style={styles.heading}>
-        <View>
-          <Text
-            style={[
-              styles.eyebrow,
-              {
-                color: colors.green,
-              },
-            ]}
-          >
-            GE SOCCER
-          </Text>
-
-          <Text
-            style={[
-              styles.title,
-              {
-                color: colors.text,
-              },
-            ]}
-          >
-            {t.matches || "Matchs"}
-          </Text>
-        </View>
-
+      <ScrollView
+        showsVerticalScrollIndicator={
+          false
+        }
+        contentContainerStyle={
+          styles.scrollContent
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={brand.green}
+          />
+        }
+      >
         <View
           style={[
-            styles.livePill,
+            styles.hero,
             {
-              backgroundColor: dark
-                ? "rgba(75,132,47,0.18)"
-                : "rgba(75,132,47,0.10)",
+              backgroundColor:
+                brand.green,
             },
           ]}
         >
           <View
-            style={[
-              styles.liveDot,
-              {
-                backgroundColor: colors.green,
-              },
-            ]}
-          />
+            style={styles.heroTop}
+          >
+            <View>
+              <Text
+                style={
+                  styles.heroSmall
+                }
+              >
+                {t.homeToday ||
+                  "AUJOURD'HUI"}
+              </Text>
+
+              <Text
+                style={
+                  styles.heroTitle
+                }
+              >
+                {t.matches ||
+                  "Matchs du jour"}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() =>
+                router.push(
+                  "/calendar"
+                )
+              }
+              style={
+                styles.calendarButton
+              }
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={21}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          </View>
 
           <Text
+            style={styles.heroDate}
+          >
+            {todayDate}
+          </Text>
+        </View>
+
+        {liveMatches.length >
+          0 && (
+          <View
+            style={styles.section}
+          >
+            <View
+              style={
+                styles.sectionHeader
+              }
+            >
+              <View
+                style={
+                  styles.sectionTitleRow
+                }
+              >
+                <View
+                  style={
+                    styles.liveDot
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    {
+                      color:
+                        colors.text,
+                    },
+                  ]}
+                >
+                  {t.live ||
+                    "En direct"}
+                </Text>
+              </View>
+
+              <Text
+                style={[
+                  styles.counter,
+                  {
+                    color:
+                      colors.textSecondary,
+                  },
+                ]}
+              >
+                {liveMatches.length}
+              </Text>
+            </View>
+
+            {liveMatches.map(
+              (match) => (
+                <MatchCard
+                  key={`live-${match.id}`}
+                  match={{
+                    ...match,
+                    status: "live",
+                  }}
+                />
+              )
+            )}
+          </View>
+        )}
+
+        <View
+          style={styles.section}
+        >
+          <View
+            style={
+              styles.sectionHeader
+            }
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color:
+                    colors.text,
+                },
+              ]}
+            >
+              {t.matches ||
+                "Matchs"}
+            </Text>
+
+            <Text
+              style={[
+                styles.counter,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
+              {displayedMatches.length}
+            </Text>
+          </View>
+
+          {loading &&
+            !hasData && (
+              <View
+                style={styles.center}
+              >
+                <ActivityIndicator
+                  size="large"
+                  color={
+                    brand.green
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.loadingText,
+                    {
+                      color:
+                        colors.textSecondary,
+                    },
+                  ]}
+                >
+                  Chargement des matchs...
+                </Text>
+              </View>
+            )}
+
+          {!loading &&
+            error &&
+            !hasData && (
+              <View
+                style={[
+                  styles.errorBox,
+                  {
+                    backgroundColor:
+                      colors.surface,
+                    borderColor:
+                      colors.border,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="cloud-offline-outline"
+                  size={32}
+                  color={
+                    brand.red
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.errorTitle,
+                    {
+                      color:
+                        colors.text,
+                    },
+                  ]}
+                >
+                  Impossible de charger
+                </Text>
+
+                <Text
+                  style={[
+                    styles.errorText,
+                    {
+                      color:
+                        colors.textSecondary,
+                    },
+                  ]}
+                >
+                  {error}
+                </Text>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    loadAll({
+                      forceRefresh:
+                        true,
+                    })
+                  }
+                  style={[
+                    styles.retryButton,
+                    {
+                      backgroundColor:
+                        brand.green,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={
+                      styles.retryText
+                    }
+                  >
+                    Réessayer
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+          {!loading &&
+            !error &&
+            displayedMatches.length ===
+              0 && (
+              <View
+                style={[
+                  styles.emptyBox,
+                  {
+                    backgroundColor:
+                      colors.surface,
+                    borderColor:
+                      colors.border,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="football-outline"
+                  size={40}
+                  color={
+                    colors.textSecondary
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.emptyTitle,
+                    {
+                      color:
+                        colors.text,
+                    },
+                  ]}
+                >
+                  Aucun match
+                </Text>
+
+                <Text
+                  style={[
+                    styles.emptyText,
+                    {
+                      color:
+                        colors.textSecondary,
+                    },
+                  ]}
+                >
+                  Aucun match disponible
+                  pour aujourd'hui.
+                </Text>
+              </View>
+            )}
+
+          {displayedMatches.map(
+            (match) => (
+              <MatchCard
+                key={match.id}
+                match={{
+                  ...match,
+                  status:
+                    isFinished(match)
+                      ? "finished"
+                      : "upcoming",
+                }}
+              />
+            )
+          )}
+        </View>
+
+        {lastUpdate && (
+          <Text
             style={[
-              styles.liveText,
+              styles.lastUpdate,
               {
-                color: colors.green,
+                color:
+                  colors.textSecondary,
               },
             ]}
           >
-            LIVE
+            Mis à jour à{" "}
+            {lastUpdate.toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit",
+                minute: "2-digit",
+              }
+            )}
           </Text>
-        </View>
-      </View>
-
-      <Glass
-        intensity={dark ? 40 : 60}
-        style={[
-          styles.promo,
-          {
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            styles.promoTitle,
-            {
-              color: colors.text,
-            },
-          ]}
-        >
-          {t.promotionTitle ||
-            "Toute l'actualité football"}
-        </Text>
-
-        <Text
-          style={[
-            styles.promoDescription,
-            {
-              color: colors.textSecondary,
-            },
-          ]}
-        >
-          {t.promotionDescription ||
-            "Résultats, matchs, équipes et compétitions au même endroit."}
-        </Text>
-      </Glass>
-
-      <View style={styles.sectionHeader}>
-        <Text
-          style={[
-            styles.sectionTitle,
-            {
-              color: colors.text,
-            },
-          ]}
-        >
-          {t.today || "Aujourd'hui"}
-        </Text>
-
-        <Text
-          style={[
-            styles.sectionCount,
-            {
-              color: colors.textSecondary,
-            },
-          ]}
-        >
-          {matches.length} matchs
-        </Text>
-      </View>
-
-      {matches.map((match) => (
-        <MatchCard
-          key={match.id}
-          match={match}
-        />
-      ))}
-    </ScrollView>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -157,74 +685,70 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
+  scrollContent: {
     paddingBottom: 120,
   },
 
-  heading: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 18,
-  },
-
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 1.5,
-  },
-
-  title: {
-    marginTop: 3,
-    fontSize: 32,
-    fontWeight: "900",
-  },
-
-  livePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
-
-  liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-
-  liveText: {
-    fontSize: 10,
-    fontWeight: "900",
-  },
-
-  promo: {
-    borderRadius: 25,
-    borderWidth: StyleSheet.hairlineWidth,
+  hero: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 20,
     padding: 20,
-    marginBottom: 22,
+    borderRadius: 26,
   },
 
-  promoTitle: {
-    fontSize: 19,
+  heroTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  heroSmall: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+
+  heroTitle: {
+    color: "#FFFFFF",
+    fontSize: 26,
     fontWeight: "900",
+    marginTop: 4,
   },
 
-  promoDescription: {
-    marginTop: 6,
-    lineHeight: 19,
+  heroDate: {
+    color: "rgba(255,255,255,0.82)",
     fontSize: 13,
+    fontWeight: "600",
+    marginTop: 12,
+  },
+
+  calendarButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor:
+      "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  section: {
+    marginHorizontal: 16,
+    marginBottom: 22,
   },
 
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 10,
+  },
+
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   sectionTitle: {
@@ -232,8 +756,84 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  sectionCount: {
-    fontSize: 12,
-    fontWeight: "700",
+  counter: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  liveDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: "#E74747",
+    marginRight: 8,
+  },
+
+  center: {
+    minHeight: 180,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  errorBox: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 24,
+    alignItems: "center",
+  },
+
+  errorTitle: {
+    marginTop: 10,
+    fontSize: 17,
+    fontWeight: "800",
+  },
+
+  errorText: {
+    textAlign: "center",
+    marginTop: 7,
+    lineHeight: 20,
+  },
+
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    borderRadius: 14,
+  },
+
+  retryText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+  },
+
+  emptyBox: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 28,
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
+  emptyText: {
+    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+
+  lastUpdate: {
+    textAlign: "center",
+    fontSize: 11,
+    marginBottom: 10,
   },
 });
