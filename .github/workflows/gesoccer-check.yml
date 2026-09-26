@@ -1,0 +1,168 @@
+name: GeSoccer - Full Error Check
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+
+  pull_request:
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check GeSoccer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Show environment
+        run: |
+          node --version
+          npm --version
+
+      - name: Check required files
+        shell: bash
+        run: |
+          set -e
+
+          files=(
+            "package.json"
+            "app.json"
+            "vercel.json"
+            "api/football.js"
+            "services/football/api.js"
+            "services/football/index.js"
+            "app/(tabs)/index.js"
+            "components/matches/MatchCard.js"
+          )
+
+          missing=0
+
+          for file in "${files[@]}"; do
+            if [ -f "$file" ]; then
+              echo "OK: $file"
+            else
+              echo "ERROR: missing $file"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Validate package.json
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8')); console.log('package.json: OK')"
+
+      - name: Validate app.json
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('app.json', 'utf8')); console.log('app.json: OK')"
+
+      - name: Validate vercel.json
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('vercel.json', 'utf8')); console.log('vercel.json: OK')"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Expo Doctor
+        run: npx expo-doctor
+
+      - name: Check dependency tree
+        run: npm ls --depth=0
+
+      - name: Check npm audit
+        run: npm audit --audit-level=high
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -e
+
+          echo "Checking JavaScript files..."
+
+          find app components services api locales theme data \
+            -type f \
+            \( -name "*.js" -o -name "*.jsx" \) \
+            -print0 |
+          while IFS= read -r -d '' file; do
+            echo "Checking: $file"
+            node --check "$file"
+          done
+
+      - name: Check Expo configuration
+        run: npx expo config --type public
+
+      - name: Build web
+        run: npx expo export --platform web
+
+      - name: Check Vercel function
+        run: |
+          node --check api/football.js
+
+      - name: Check for exposed API keys
+        shell: bash
+        run: |
+          set -e
+
+          echo "Searching for potentially exposed API keys..."
+
+          if grep -RniE \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude="*.lock" \
+            'x-apisports-key[[:space:]]*[:=][[:space:]]*["'\'']?[A-Za-z0-9_-]{20,}' \
+            .; then
+
+            echo ""
+            echo "ERROR: Possible API-Football key detected."
+            echo "Remove the key from the repository."
+            exit 1
+          fi
+
+          echo "No obvious exposed API-Football key found."
+
+      - name: Check environment configuration
+        shell: bash
+        run: |
+          echo "Checking environment variable references..."
+
+          grep -Rni \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            "EXPO_PUBLIC_GESOCCER_API_URL" \
+            services api app package.json || true
+
+          echo ""
+          echo "Production API_FOOTBALL_KEY must be configured in Vercel."
+          echo "It must NOT be committed to GitHub."
+
+      - name: Upload web build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gesoccer-web-build
+          path: dist/
+          if-no-files-found: warn
+
+      - name: Final result
+        if: success()
+        run: |
+          echo "======================================"
+          echo "GeSoccer checks completed successfully"
+          echo "======================================"
