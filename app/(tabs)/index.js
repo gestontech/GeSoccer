@@ -9,8 +9,8 @@ import {
 import Glass from "../../components/glass/Glass";
 import MatchCard from "../../components/matches/MatchCard";
 import { matches } from "../../data/matches";
-import { useAppTheme } from "../../theme/useAppTheme";
 import { getTranslations } from "../../locales/i18n";
+import { useAppTheme } from "../../theme/useAppTheme";
 
 export default function HomeScreen() {
   const { colors, dark } = useAppTheme();
@@ -20,7 +20,9 @@ export default function HomeScreen() {
     <ScrollView
       style={[
         styles.container,
-        { backgroundColor: colors.background },
+        {
+          backgroundColor: colors.background,
+        },
       ]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -30,7 +32,9 @@ export default function HomeScreen() {
           <Text
             style={[
               styles.eyebrow,
-              { color: colors.green },
+              {
+                color: colors.green,
+              },
             ]}
           >
             GE SOCCER
@@ -39,7 +43,9 @@ export default function HomeScreen() {
           <Text
             style={[
               styles.title,
-              { color: colors.text },
+              {
+                color: colors.text,
+              },
             ]}
           >
             {t.matches || "Matchs"}
@@ -59,14 +65,18 @@ export default function HomeScreen() {
           <View
             style={[
               styles.liveDot,
-              { backgroundColor: colors.green },
+              {
+                backgroundColor: colors.green,
+              },
             ]}
           />
 
           <Text
             style={[
               styles.liveText,
-              { color: colors.green },
+              {
+                color: colors.green,
+              },
             ]}
           >
             LIVE
@@ -78,36 +88,43 @@ export default function HomeScreen() {
         intensity={dark ? 40 : 60}
         style={[
           styles.promo,
-          { borderColor: colors.border },
+          {
+            borderColor: colors.border,
+          },
         ]}
       >
-        <View style={styles.promoText}>
-          <Text
-            style={[
-              styles.promoTitle,
-              { color: colors.text },
-            ]}
-          >
-            {t.promotionTitle || "Toute l'actualité football"}
-          </Text>
+        <Text
+          style={[
+            styles.promoTitle,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          {t.promotionTitle ||
+            "Toute l'actualité football"}
+        </Text>
 
-          <Text
-            style={[
-              styles.promoDescription,
-              { color: colors.textSecondary },
-            ]}
-          >
-            {t.promotionDescription ||
-              "Résultats, matchs, équipes et compétitions au même endroit."}
-          </Text>
-        </View>
+        <Text
+          style={[
+            styles.promoDescription,
+            {
+              color: colors.textSecondary,
+            },
+          ]}
+        >
+          {t.promotionDescription ||
+            "Résultats, matchs, équipes et compétitions au même endroit."}
+        </Text>
       </Glass>
 
       <View style={styles.sectionHeader}>
         <Text
           style={[
             styles.sectionTitle,
-            { color: colors.text },
+            {
+              color: colors.text,
+            },
           ]}
         >
           {t.today || "Aujourd'hui"}
@@ -116,7 +133,9 @@ export default function HomeScreen() {
         <Text
           style={[
             styles.sectionCount,
-            { color: colors.textSecondary },
+            {
+              color: colors.textSecondary,
+            },
           ]}
         >
           {matches.length} matchs
@@ -188,10 +207,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     padding: 20,
     marginBottom: 22,
-  },
-
-  promoText: {
-    maxWidth: "92%",
   },
 
   promoTitle: {
