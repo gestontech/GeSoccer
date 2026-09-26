@@ -7,7 +7,10 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import {
+  router,
+  useLocalSearchParams,
+} from "expo-router";
 
 import Glass from "../../components/glass/Glass";
 import { useAppTheme } from "../../theme/useAppTheme";
@@ -18,20 +21,24 @@ export default function TeamDetailsScreen() {
 
   const teamName = String(id || "team")
     .replace(/-/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
 
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.background },
+        {
+          backgroundColor: colors.background,
+        },
       ]}
     >
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
           style={[
-            styles.backButton,
+            styles.back,
             {
               backgroundColor: dark
                 ? "rgba(255,255,255,0.08)"
@@ -49,13 +56,15 @@ export default function TeamDetailsScreen() {
         <Text
           style={[
             styles.headerTitle,
-            { color: colors.text },
+            {
+              color: colors.text,
+            },
           ]}
         >
           Équipe
         </Text>
 
-        <View style={styles.headerSpace} />
+        <View style={styles.space} />
       </View>
 
       <ScrollView
@@ -66,7 +75,9 @@ export default function TeamDetailsScreen() {
           intensity={dark ? 35 : 55}
           style={[
             styles.hero,
-            { borderColor: colors.border },
+            {
+              borderColor: colors.border,
+            },
           ]}
         >
           <View
@@ -88,8 +99,10 @@ export default function TeamDetailsScreen() {
 
           <Text
             style={[
-              styles.teamName,
-              { color: colors.text },
+              styles.title,
+              {
+                color: colors.text,
+              },
             ]}
           >
             {teamName}
@@ -98,7 +111,9 @@ export default function TeamDetailsScreen() {
           <Text
             style={[
               styles.subtitle,
-              { color: colors.textSecondary },
+              {
+                color: colors.textSecondary,
+              },
             ]}
           >
             Informations de l'équipe
@@ -106,23 +121,43 @@ export default function TeamDetailsScreen() {
         </Glass>
 
         <View style={styles.grid}>
-          <Stat title="Matchs" value="0" colors={colors} />
-          <Stat title="Victoires" value="0" colors={colors} />
-          <Stat title="Nuls" value="0" colors={colors} />
-          <Stat title="Défaites" value="0" colors={colors} />
+          <Stat
+            title="Matchs"
+            value="0"
+            colors={colors}
+          />
+          <Stat
+            title="Victoires"
+            value="0"
+            colors={colors}
+          />
+          <Stat
+            title="Nuls"
+            value="0"
+            colors={colors}
+          />
+          <Stat
+            title="Défaites"
+            value="0"
+            colors={colors}
+          />
         </View>
 
         <Glass
           intensity={dark ? 30 : 50}
           style={[
             styles.section,
-            { borderColor: colors.border },
+            {
+              borderColor: colors.border,
+            },
           ]}
         >
           <Text
             style={[
               styles.sectionTitle,
-              { color: colors.text },
+              {
+                color: colors.text,
+              },
             ]}
           >
             Prochains matchs
@@ -131,7 +166,9 @@ export default function TeamDetailsScreen() {
           <Text
             style={[
               styles.empty,
-              { color: colors.textSecondary },
+              {
+                color: colors.textSecondary,
+              },
             ]}
           >
             Aucun match disponible pour le moment.
@@ -142,22 +179,37 @@ export default function TeamDetailsScreen() {
   );
 }
 
-function Stat({ title, value, colors }) {
+function Stat({
+  title,
+  value,
+  colors,
+}) {
   return (
     <View
       style={[
         styles.stat,
-        { backgroundColor: colors.surface },
+        {
+          backgroundColor: colors.surface,
+        },
       ]}
     >
-      <Text style={[styles.statValue, { color: colors.text }]}>
+      <Text
+        style={[
+          styles.statValue,
+          {
+            color: colors.text,
+          },
+        ]}
+      >
         {value}
       </Text>
 
       <Text
         style={[
           styles.statTitle,
-          { color: colors.textSecondary },
+          {
+            color: colors.textSecondary,
+          },
         ]}
       >
         {title}
@@ -179,7 +231,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  backButton: {
+  back: {
     width: 42,
     height: 42,
     borderRadius: 21,
@@ -192,7 +244,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  headerSpace: {
+  space: {
     width: 42,
   },
 
@@ -217,7 +269,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
-  teamName: {
+  title: {
     fontSize: 27,
     fontWeight: "900",
   },
