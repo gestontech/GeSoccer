@@ -14,14 +14,16 @@ import { useAppTheme } from "../../theme/useAppTheme";
 export default function MatchCard({ match }) {
   const { colors, dark } = useAppTheme();
 
-  const isFinished = match.status === "finished";
+  const finished = match.status === "finished";
 
   return (
     <Pressable
       onPress={() =>
         router.push({
           pathname: "/match/[id]",
-          params: { id: match.id },
+          params: {
+            id: match.id,
+          },
         })
       }
       style={({ pressed }) => [
@@ -43,7 +45,9 @@ export default function MatchCard({ match }) {
             numberOfLines={1}
             style={[
               styles.competition,
-              { color: colors.textSecondary },
+              {
+                color: colors.textSecondary,
+              },
             ]}
           >
             {match.competition}
@@ -57,41 +61,20 @@ export default function MatchCard({ match }) {
         </View>
 
         <View style={styles.teams}>
-          <View style={styles.team}>
-            <View
-              style={[
-                styles.teamBadge,
-                {
-                  backgroundColor: dark
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(0,0,0,0.05)",
-                },
-              ]}
-            >
-              <Ionicons
-                name="football"
-                size={20}
-                color={colors.green}
-              />
-            </View>
-
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.teamName,
-                { color: colors.text },
-              ]}
-            >
-              {match.homeTeam}
-            </Text>
-          </View>
+          <Team
+            name={match.homeTeam}
+            colors={colors}
+            dark={dark}
+          />
 
           <View style={styles.scoreContainer}>
-            {isFinished ? (
+            {finished ? (
               <Text
                 style={[
                   styles.score,
-                  { color: colors.text },
+                  {
+                    color: colors.text,
+                  },
                 ]}
               >
                 {match.homeScore} - {match.awayScore}
@@ -100,7 +83,9 @@ export default function MatchCard({ match }) {
               <Text
                 style={[
                   styles.time,
-                  { color: colors.green },
+                  {
+                    color: colors.green,
+                  },
                 ]}
               >
                 {match.time}
@@ -108,42 +93,19 @@ export default function MatchCard({ match }) {
             )}
           </View>
 
-          <View style={styles.team}>
-            <View
-              style={[
-                styles.teamBadge,
-                {
-                  backgroundColor: dark
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(0,0,0,0.05)",
-                },
-              ]}
-            >
-              <Ionicons
-                name="football"
-                size={20}
-                color={colors.green}
-              />
-            </View>
-
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.teamName,
-                { color: colors.text },
-              ]}
-            >
-              {match.awayTeam}
-            </Text>
-          </View>
+          <Team
+            name={match.awayTeam}
+            colors={colors}
+            dark={dark}
+          />
         </View>
 
         <View style={styles.bottom}>
           <View
             style={[
-              styles.statusDot,
+              styles.dot,
               {
-                backgroundColor: isFinished
+                backgroundColor: finished
                   ? colors.textSecondary
                   : colors.green,
               },
@@ -153,14 +115,55 @@ export default function MatchCard({ match }) {
           <Text
             style={[
               styles.status,
-              { color: colors.textSecondary },
+              {
+                color: colors.textSecondary,
+              },
             ]}
           >
-            {isFinished ? "Terminé" : "À venir"}
+            {finished ? "Terminé" : "À venir"}
           </Text>
         </View>
       </Glass>
     </Pressable>
+  );
+}
+
+function Team({
+  name,
+  colors,
+  dark,
+}) {
+  return (
+    <View style={styles.team}>
+      <View
+        style={[
+          styles.badge,
+          {
+            backgroundColor: dark
+              ? "rgba(255,255,255,0.08)"
+              : "rgba(0,0,0,0.05)",
+          },
+        ]}
+      >
+        <Ionicons
+          name="football"
+          size={20}
+          color={colors.green}
+        />
+      </View>
+
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.teamName,
+          {
+            color: colors.text,
+          },
+        ]}
+      >
+        {name}
+      </Text>
+    </View>
   );
 }
 
@@ -171,7 +174,11 @@ const styles = StyleSheet.create({
 
   pressed: {
     opacity: 0.78,
-    transform: [{ scale: 0.985 }],
+    transform: [
+      {
+        scale: 0.985,
+      },
+    ],
   },
 
   card: {
@@ -206,7 +213,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  teamBadge: {
+  badge: {
     width: 46,
     height: 46,
     borderRadius: 23,
@@ -243,7 +250,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
 
-  statusDot: {
+  dot: {
     width: 7,
     height: 7,
     borderRadius: 4,
