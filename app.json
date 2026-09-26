@@ -3,12 +3,17 @@
     "name": "GeSoccer",
     "slug": "gesoccer",
     "version": "1.0.0",
-
     "orientation": "portrait",
-
     "userInterfaceStyle": "automatic",
-
     "scheme": "gesoccer",
+
+    "plugins": [
+      "expo-router"
+    ],
+
+    "experiments": {
+      "typedRoutes": true
+    },
 
     "splash": {
       "resizeMode": "contain",
