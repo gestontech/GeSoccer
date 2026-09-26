@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "GeSoccer",
+    "slug": "gesoccer",
+    "version": "1.0.0",
+
+    "orientation": "portrait",
+
+    "userInterfaceStyle": "automatic",
+
+    "scheme": "gesoccer",
+
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#4B842F"
+    },
+
+    "ios": {
+      "bundleIdentifier": "com.gesoccer.app"
+    },
+
+    "android": {
+      "package": "com.gesoccer.app"
+    },
+
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
