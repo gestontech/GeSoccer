@@ -20,6 +20,7 @@ import {
 } from "@expo/vector-icons";
 
 import MatchCard from "../../components/matches/MatchCard";
+import GeSoccerLogo from "../../components/logo/GeSoccerLogo";
 
 import {
   footballApi,
@@ -403,6 +404,14 @@ export default function HomeScreen() {
           />
         }
       >
+        {/* Logo GeSoccer */}
+        <View style={styles.logoArea}>
+          <GeSoccerLogo
+            size={82}
+            showShadow
+          />
+        </View>
+
         <View
           style={styles.matchesHeader}
         >
@@ -721,6 +730,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 4,
     paddingBottom: 120,
+  },
+
+  logoArea: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    marginBottom: 4,
   },
 
   matchesHeader: {
