@@ -1,44 +1,64 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import { Tabs } from "expo-router";
+
+import {
+  View,
+  StyleSheet,
+} from "react-native";
+
+import {
+  Tabs,
+} from "expo-router";
 
 import AppHeader from "../../components/header/AppHeader";
 import BottomNavigation from "../../components/navigation/BottomNavigation";
-import { useAppTheme } from "../../theme/useAppTheme";
+
+import {
+  useAppTheme,
+} from "../../theme/useAppTheme";
+
+import {
+  DateSelectionProvider,
+} from "../../context/DateSelectionContext";
 
 export default function TabsLayout() {
   const { dark } = useAppTheme();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: dark ? "#101010" : "#F2F2F2",
-        },
-      ]}
-    >
-      <AppHeader />
+    <DateSelectionProvider>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor:
+              dark
+                ? "#101010"
+                : "#F2F2F2",
+          },
+        ]}
+      >
+        <AppHeader />
 
-      <View style={styles.content}>
-        <Tabs
-          screenOptions={{
-            headerShown: false,
-            tabBarStyle: {
-              display: "none",
-            },
-          }}
-        >
-          <Tabs.Screen name="index" />
-          <Tabs.Screen name="explore" />
-          <Tabs.Screen name="transfers" />
-          <Tabs.Screen name="news" />
-          <Tabs.Screen name="favorites" />
-        </Tabs>
+        <View style={styles.content}>
+          <Tabs
+            screenOptions={{
+              headerShown: false,
+
+              tabBarStyle: {
+                display: "none",
+              },
+            }}
+          >
+            <Tabs.Screen name="index" />
+            <Tabs.Screen name="explore" />
+            <Tabs.Screen name="transfers" />
+            <Tabs.Screen name="news" />
+            <Tabs.Screen name="favorites" />
+          </Tabs>
+        </View>
+
+        <BottomNavigation />
       </View>
-
-      <BottomNavigation />
-    </View>
+    </DateSelectionProvider>
   );
 }
 
