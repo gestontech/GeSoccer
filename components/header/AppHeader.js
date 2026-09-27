@@ -29,9 +29,7 @@ export default function AppHeader() {
       <TouchableOpacity
         style={styles.button}
         activeOpacity={0.75}
-        onPress={() =>
-          router.push("/settings")
-        }
+        onPress={() => router.push("/settings")}
       >
         <View style={styles.menu}>
           <View style={styles.line} />
@@ -40,79 +38,31 @@ export default function AppHeader() {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.75}
-        onPress={() =>
-          router.push("/calendar")
-        }
-      >
-        <Ionicons
-          name="football-outline"
-          size={29}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
+      <View style={styles.rightActions}>
+        <TouchableOpacity
+          style={styles.button}
+          activeOpacity={0.75}
+          onPress={() => router.push("/calendar")}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={25}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.75}
-        onPress={() =>
-          router.push("/calendar")
-        }
-      >
-        <Ionicons
-          name="calendar-outline"
-          size={29}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.75}
-        onPress={() =>
-          router.push("/notifications")
-        }
-      >
-        <Ionicons
-          name="notifications-outline"
-          size={29}
-          color="#FFFFFF"
-        />
-
-        <View style={styles.badge}>
-          <View style={styles.badgeDot} />
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.75}
-        onPress={() =>
-          router.push("/calendar")
-        }
-      >
-        <Ionicons
-          name="calendar"
-          size={28}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.75}
-        onPress={() =>
-          router.push("/search")
-        }
-      >
-        <Ionicons
-          name="search"
-          size={30}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          activeOpacity={0.75}
+          onPress={() => router.push("/search")}
+        >
+          <Ionicons
+            name="search-outline"
+            size={25}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -120,69 +70,36 @@ export default function AppHeader() {
 const styles = StyleSheet.create({
   container: {
     height: 74,
-
     flexDirection: "row",
-
     alignItems: "center",
-
-    justifyContent: "space-around",
-
-    paddingHorizontal: 7,
-
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
     elevation: 8,
   },
 
-  button: {
-    width: 45,
-
-    height: 45,
-
+  rightActions: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 2,
+  },
 
+  button: {
+    width: 42,
+    height: 42,
+    alignItems: "center",
     justifyContent: "center",
   },
 
   menu: {
-    gap: 6,
-  },
-
-  line: {
-    width: 32,
-
-    height: 4,
-
-    borderRadius: 4,
-
-    backgroundColor: "#FFFFFF",
-  },
-
-  badge: {
-    position: "absolute",
-
-    right: 1,
-
-    top: 0,
-
-    width: 12,
-
-    height: 12,
-
-    borderRadius: 8,
-
-    backgroundColor: "#FFFFFF",
-
+    gap: 5,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
-  badgeDot: {
-    width: 7,
-
-    height: 7,
-
-    borderRadius: 5,
-
-    backgroundColor: "#E74747",
+  line: {
+    width: 26,
+    height: 3,
+    borderRadius: 3,
+    backgroundColor: "#FFFFFF",
   },
 });
