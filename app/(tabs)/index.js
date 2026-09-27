@@ -135,7 +135,7 @@ function isFinished(match) {
 }
 
 export default function HomeScreen() {
-  const { dark, colors, brand } =
+  const { colors, brand } =
     useAppTheme();
 
   const { t } =
@@ -167,18 +167,24 @@ export default function HomeScreen() {
         setError("");
 
         const response =
-          await footballApi.today({
-            forceRefresh,
-          });
+          await footballApi.today(
+            {},
+            {
+              forceRefresh,
+            }
+          );
 
-        const list = Array.isArray(
-          response?.response
-        )
-          ? response.response
-          : [];
+        const list =
+          Array.isArray(
+            response?.response
+          )
+            ? response.response
+            : [];
 
         const normalized =
-          list.map(normalizeFixture);
+          list.map(
+            normalizeFixture
+          );
 
         setMatches(normalized);
         setLastUpdate(new Date());
@@ -198,15 +204,19 @@ export default function HomeScreen() {
     } = {}) => {
       try {
         const response =
-          await footballApi.live({
-            forceRefresh,
-          });
+          await footballApi.live(
+            {},
+            {
+              forceRefresh,
+            }
+          );
 
-        const list = Array.isArray(
-          response?.response
-        )
-          ? response.response
-          : [];
+        const list =
+          Array.isArray(
+            response?.response
+          )
+            ? response.response
+            : [];
 
         const normalized =
           list
@@ -216,8 +226,6 @@ export default function HomeScreen() {
         setLiveMatches(normalized);
         setLastUpdate(new Date());
       } catch (err) {
-        // Le Live ne doit pas supprimer
-        // les matchs déjà affichés.
         console.log(
           "GeSoccer Live:",
           err?.message
@@ -233,17 +241,19 @@ export default function HomeScreen() {
     } = {}) => {
       setLoading(true);
 
-      await Promise.all([
-        loadToday({
-          forceRefresh,
-        }),
+      try {
+        await Promise.all([
+          loadToday({
+            forceRefresh,
+          }),
 
-        loadLive({
-          forceRefresh,
-        }),
-      ]);
-
-      setLoading(false);
+          loadLive({
+            forceRefresh,
+          }),
+        ]);
+      } finally {
+        setLoading(false);
+      }
     },
     [loadLive, loadToday]
   );
@@ -265,11 +275,13 @@ export default function HomeScreen() {
     async () => {
       setRefreshing(true);
 
-      await loadAll({
-        forceRefresh: true,
-      });
-
-      setRefreshing(false);
+      try {
+        await loadAll({
+          forceRefresh: true,
+        });
+      } finally {
+        setRefreshing(false);
+      }
     },
     [loadAll]
   );
@@ -284,12 +296,14 @@ export default function HomeScreen() {
       return [...matches].sort(
         (a, b) => {
           const aDate =
-            new Date(a.date || 0)
-              .getTime();
+            new Date(
+              a.date || 0
+            ).getTime();
 
           const bDate =
-            new Date(b.date || 0)
-              .getTime();
+            new Date(
+              b.date || 0
+            ).getTime();
 
           return aDate - bDate;
         }
@@ -704,7 +718,8 @@ const styles = StyleSheet.create({
   },
 
   heroSmall: {
-    color: "rgba(255,255,255,0.72)",
+    color:
+      "rgba(255,255,255,0.72)",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1,
@@ -718,7 +733,8 @@ const styles = StyleSheet.create({
   },
 
   heroDate: {
-    color: "rgba(255,255,255,0.82)",
+    color:
+      "rgba(255,255,255,0.82)",
     fontSize: 13,
     fontWeight: "600",
     marginTop: 12,
