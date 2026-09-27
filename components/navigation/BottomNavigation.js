@@ -20,32 +20,27 @@ import Glass from "../glass/Glass";
 
 import { useAppTheme } from "../../theme/useAppTheme";
 
-/**
- * Petit stade vert avec marquages blancs.
- * Taille totale : 20 x 20 px.
- */
-function StadiumIcon({ active = false }) {
+function StadiumIcon({ color }) {
   return (
     <View
       style={[
         styles.stadium,
         {
-          opacity: active ? 1 : 0.9,
+          backgroundColor: color,
         },
       ]}
     >
-      <View style={styles.stadiumField}>
-        {/* Ligne centrale */}
-        <View style={styles.centerLine} />
+      <View style={styles.stadiumRoof} />
 
-        {/* Cercle central */}
-        <View style={styles.centerCircle} />
+      <View style={styles.field}>
+        <View style={styles.fieldLineVertical} />
 
-        {/* Surface gauche */}
-        <View style={styles.leftBox} />
+        <View style={styles.fieldCenterCircle}>
+          <View style={styles.fieldCenterDot} />
+        </View>
 
-        {/* Surface droite */}
-        <View style={styles.rightBox} />
+        <View style={styles.fieldBoxLeft} />
+        <View style={styles.fieldBoxRight} />
       </View>
     </View>
   );
@@ -61,14 +56,14 @@ export default function BottomNavigation() {
       id: "matches",
       route: "/",
       label: "matches",
-      type: "stadium",
+      stadium: true,
     },
 
     {
       id: "favorites",
       route: "/favorites",
       label: "favorites",
-      icon: "heart-outline",
+      icon: "star-outline",
     },
 
     {
@@ -86,10 +81,10 @@ export default function BottomNavigation() {
     },
 
     {
-      id: "infos",
+      id: "info",
       route: "/news",
-      label: "infos",
-      icon: "information-circle-outline",
+      label: "info",
+      icon: "newspaper-outline",
     },
   ];
 
@@ -112,12 +107,18 @@ export default function BottomNavigation() {
             ? pathname === "/"
             : pathname.startsWith(item.route);
 
+        const iconColor = selected
+          ? brand.greenLight
+          : colors.icon;
+
         return (
           <TouchableOpacity
             key={item.id}
             style={styles.item}
             activeOpacity={0.75}
-            onPress={() => router.replace(item.route)}
+            onPress={() =>
+              router.replace(item.route)
+            }
           >
             <View
               style={[
@@ -128,17 +129,13 @@ export default function BottomNavigation() {
                 },
               ]}
             >
-              {item.type === "stadium" ? (
-                <StadiumIcon active={selected} />
+              {item.stadium ? (
+                <StadiumIcon color={iconColor} />
               ) : (
                 <Ionicons
                   name={item.icon}
                   size={20}
-                  color={
-                    selected
-                      ? brand.greenLight
-                      : colors.icon
-                  }
+                  color={iconColor}
                 />
               )}
             </View>
@@ -148,9 +145,7 @@ export default function BottomNavigation() {
               style={[
                 styles.label,
                 {
-                  color: selected
-                    ? brand.greenLight
-                    : colors.icon,
+                  color: iconColor,
                 },
               ]}
             >
@@ -166,72 +161,67 @@ export default function BottomNavigation() {
 const styles = StyleSheet.create({
   container: {
     height: 82,
-
     borderRadius: 0,
-
     borderTopWidth: 1,
-
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "space-around",
   },
 
   item: {
     flex: 1,
-
     height: "100%",
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   iconContainer: {
     width: 43,
-
     height: 34,
-
     borderRadius: 18,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   label: {
     fontSize: 11,
-
     marginTop: 4,
-
     fontWeight: "600",
   },
-
-  /* =========================
-     STADE 20 x 20
-     ========================= */
 
   stadium: {
     width: 20,
     height: 20,
-    borderRadius: 5,
-    backgroundColor: "#69A951",
+    borderRadius: 4,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     overflow: "hidden",
+    paddingBottom: 2,
   },
 
-  stadiumField: {
+  stadiumRoof: {
+    position: "absolute",
+    top: 0,
+    left: 2,
+    right: 2,
+    height: 4,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: "#FFFFFF",
+  },
+
+  field: {
     width: 15,
     height: 12,
     borderWidth: 1,
     borderColor: "#FFFFFF",
-    borderRadius: 2,
+    borderRadius: 1,
     position: "relative",
   },
 
-  centerLine: {
+  fieldLineVertical: {
     position: "absolute",
     top: 0,
     bottom: 0,
@@ -240,36 +230,45 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
 
-  centerCircle: {
+  fieldCenterCircle: {
     position: "absolute",
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
     borderWidth: 0.8,
     borderColor: "#FFFFFF",
-    top: 3.2,
-    left: 4.8,
+    left: 4.5,
+    top: 2.5,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  leftBox: {
+  fieldCenterDot: {
+    width: 1.5,
+    height: 1.5,
+    borderRadius: 1,
+    backgroundColor: "#FFFFFF",
+  },
+
+  fieldBoxLeft: {
     position: "absolute",
     width: 3,
     height: 6,
+    left: -1,
+    top: 2,
     borderWidth: 0.8,
     borderColor: "#FFFFFF",
     borderLeftWidth: 0,
-    top: 2,
-    left: 0,
   },
 
-  rightBox: {
+  fieldBoxRight: {
     position: "absolute",
     width: 3,
     height: 6,
+    right: -1,
+    top: 2,
     borderWidth: 0.8,
     borderColor: "#FFFFFF",
     borderRightWidth: 0,
-    top: 2,
-    right: 0,
   },
 });
