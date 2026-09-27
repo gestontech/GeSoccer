@@ -14,6 +14,8 @@ import { router } from "expo-router";
 
 import { useAppTheme } from "../../theme/useAppTheme";
 
+const SKY_BLUE = "#63BFE8";
+
 export default function AppHeader() {
   const { brand } = useAppTheme();
 
@@ -22,7 +24,7 @@ export default function AppHeader() {
       style={[
         styles.container,
         {
-          backgroundColor: brand.green,
+          backgroundColor: SKY_BLUE,
         },
       ]}
     >
@@ -69,7 +71,7 @@ export default function AppHeader() {
 
 const styles = StyleSheet.create({
   container: {
-    height: 74,
+    height: 88,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
