@@ -22,7 +22,8 @@
     },
 
     "ios": {
-      "bundleIdentifier": "com.gesoccer.app"
+      "bundleIdentifier": "com.gesoccer.app",
+      "supportsTablet": true
     },
 
     "android": {
