@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_GESOCCER_API_URL || "";
+  process.env.EXPO_PUBLIC_GESOCCER_API_URL ||
+  (Platform.OS === "web" ? "/api/football" : "");
 
 const CACHE_PREFIX = "gesoccer:football:v2:";
 const DEFAULT_TTL = 5 * 60 * 1000;
@@ -15,7 +17,7 @@ const CACHE_TTLS = {
   teams: 24 * 60 * 60 * 1000,
   leagues: 24 * 60 * 60 * 1000,
   players: 6 * 60 * 60 * 1000,
-  transfers: 12 * 60 * 60 * 1000,
+  transfers: 12 * 60 * 60 * 1000
 };
 
 function getTtl(endpoint) {
@@ -44,14 +46,24 @@ function buildUrl(endpoint, params = {}) {
 
     if (Array.isArray(value)) {
       for (const item of value) {
-        searchParams.append(key, String(item));
+        if (
+          item !== undefined &&
+          item !== null &&
+          item !== ""
+        ) {
+          searchParams.append(key, String(item));
+        }
       }
     } else {
       searchParams.set(key, String(value));
     }
   }
 
-  return `${API_BASE_URL}?${searchParams.toString()}`;
+  const separator = API_BASE_URL.includes("?")
+    ? "&"
+    : "?";
+
+  return `${API_BASE_URL}${separator}${searchParams.toString()}`;
 }
 
 async function readCache(cacheKey) {
@@ -85,7 +97,7 @@ async function writeCache(cacheKey, data) {
       cacheKey,
       JSON.stringify({
         timestamp: Date.now(),
-        data,
+        data
       })
     );
   } catch {
@@ -104,9 +116,9 @@ async function requestJson(url) {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Accept: "application/json",
+        Accept: "application/json"
       },
-      signal: controller.signal,
+      signal: controller.signal
     });
 
     const text = await response.text();
@@ -155,7 +167,7 @@ export async function footballRequest(
 ) {
   const {
     forceRefresh = false,
-    useCache = true,
+    useCache = true
   } = options;
 
   const cacheKey =
@@ -168,7 +180,8 @@ export async function footballRequest(
     const cached = await readCache(cacheKey);
 
     if (cached) {
-      const age = Date.now() - cached.timestamp;
+      const age =
+        Date.now() - cached.timestamp;
 
       if (age < ttl) {
         return cached.data;
@@ -176,12 +189,19 @@ export async function footballRequest(
     }
   }
 
-  const url = buildUrl(endpoint, params);
+  const url = buildUrl(
+    endpoint,
+    params
+  );
 
-  const data = await requestJson(url);
+  const data =
+    await requestJson(url);
 
   if (useCache) {
-    await writeCache(cacheKey, data);
+    await writeCache(
+      cacheKey,
+      data
+    );
   }
 
   return data;
@@ -190,15 +210,18 @@ export async function footballRequest(
 function getTodayDate() {
   const date = new Date();
 
-  const year = date.getFullYear();
+  const year =
+    date.getFullYear();
 
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
 
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+  const day =
+    String(
+      date.getDate()
+    ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -217,7 +240,7 @@ export const footballApi = {
       "fixtures",
       {
         date: getTodayDate(),
-        ...params,
+        ...params
       },
       options
     );
@@ -277,5 +300,5 @@ export const footballApi = {
       params,
       options
     );
-  },
+  }
 };
