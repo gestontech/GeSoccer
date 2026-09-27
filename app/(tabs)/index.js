@@ -15,67 +15,27 @@ import {
   View,
 } from "react-native";
 
-import { Ionicons } from "@expo/vector-icons";
+import {
+  Ionicons,
+} from "@expo/vector-icons";
 
 import MatchCard from "../../components/matches/MatchCard";
-import { footballApi } from "../../services/football";
-import { useAppTheme } from "../../theme/useAppTheme";
-import { getTranslations } from "../../locales/i18n";
 
-const SKY_BLUE = "#63BFE8";
+import {
+  footballApi,
+} from "../../services/football";
 
-const MONTHS = [
-  "JAN.",
-  "FÉV.",
-  "MAR.",
-  "AVR.",
-  "MAI",
-  "JUIN",
-  "JUIL.",
-  "AOÛT",
-  "SEPT.",
-  "OCT.",
-  "NOV.",
-  "DÉC.",
-];
+import {
+  useAppTheme,
+} from "../../theme/useAppTheme";
 
-const WEEKDAYS = [
-  "DIM.",
-  "LUN.",
-  "MAR.",
-  "MER.",
-  "JEU.",
-  "VEN.",
-  "SAM.",
-];
+import {
+  getTranslations,
+} from "../../locales/i18n";
 
-function formatApiDate(date) {
-  const year = date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function getDateKey(date) {
-  return formatApiDate(date);
-}
-
-function addDays(date, amount) {
-  const result = new Date(date);
-
-  result.setDate(
-    result.getDate() + amount
-  );
-
-  return result;
-}
+import {
+  useDateSelection,
+} from "../../context/DateSelectionContext";
 
 function normalizeFixture(item) {
   const fixture = item?.fixture || {};
@@ -196,92 +156,54 @@ function isFinished(match) {
   ].includes(match.shortStatus);
 }
 
-function formatDateLabel(date) {
-  return `${WEEKDAYS[date.getDay()]} ${String(
-    date.getDate()
-  ).padStart(2, "0")} ${MONTHS[date.getMonth()]}`;
-}
-
-function createDateItems() {
-  const today = new Date();
-
-  const start = addDays(today, -7);
-  const end = addDays(today, 7);
-
-  const result = [];
-
-  for (
-    let date = start;
-    date <= end;
-    date = addDays(date, 1)
-  ) {
-    const key = getDateKey(date);
-
-    result.push({
-      key,
-      date: new Date(date),
-      label: formatDateLabel(date),
-      day: date.getDate(),
-    });
-  }
-
-  return result;
-}
-
 export default function HomeScreen() {
-  const { colors, brand } =
-    useAppTheme();
+  const {
+    colors,
+    brand,
+  } = useAppTheme();
 
-  const { t } =
-    getTranslations();
+  const { t } = getTranslations();
 
-  const dates = useMemo(
-    () => createDateItems(),
-    []
-  );
+  const {
+    selectedDate,
+    liveMode,
+  } = useDateSelection();
 
-  const todayKey = useMemo(
-    () => getDateKey(new Date()),
-    []
-  );
+  const [
+    matches,
+    setMatches,
+  ] = useState([]);
 
-  const [selectedDate, setSelectedDate] =
-    useState(todayKey);
+  const [
+    liveMatches,
+    setLiveMatches,
+  ] = useState([]);
 
-  const [matches, setMatches] =
-    useState([]);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [liveMatches, setLiveMatches] =
-    useState([]);
+  const [
+    refreshing,
+    setRefreshing,
+  ] = useState(false);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [refreshing, setRefreshing] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const selectedDateObject =
-    useMemo(
-      () =>
-        dates.find(
-          (item) =>
-            item.key === selectedDate
-        )?.date ||
-        new Date(),
-      [dates, selectedDate]
-    );
-
-  const isToday =
-    selectedDate === todayKey;
+  const [
+    error,
+    setError,
+  ] = useState("");
 
   const loadMatchesForDate =
     useCallback(
       async ({
         forceRefresh = false,
       } = {}) => {
+        if (liveMode) {
+          setMatches([]);
+          return;
+        }
+
         try {
           setError("");
 
@@ -314,7 +236,10 @@ export default function HomeScreen() {
           );
         }
       },
-      [selectedDate]
+      [
+        selectedDate,
+        liveMode,
+      ]
     );
 
   const loadLive =
@@ -322,7 +247,7 @@ export default function HomeScreen() {
       async ({
         forceRefresh = false,
       } = {}) => {
-        if (!isToday) {
+        if (!liveMode) {
           setLiveMatches([]);
           return;
         }
@@ -352,7 +277,7 @@ export default function HomeScreen() {
           setLiveMatches([]);
         }
       },
-      [isToday]
+      [liveMode]
     );
 
   const loadAll =
@@ -386,55 +311,64 @@ export default function HomeScreen() {
     loadAll();
   }, [
     selectedDate,
+    liveMode,
     loadAll,
   ]);
 
   useEffect(() => {
     const interval =
       setInterval(() => {
-        loadLive({
-          forceRefresh: true,
-        });
+        if (liveMode) {
+          loadLive({
+            forceRefresh: true,
+          });
+        }
       }, 60 * 1000);
 
     return () =>
       clearInterval(interval);
-  }, [loadLive]);
+  }, [
+    liveMode,
+    loadLive,
+  ]);
 
   const onRefresh =
-    useCallback(async () => {
-      setRefreshing(true);
+    useCallback(
+      async () => {
+        setRefreshing(true);
 
-      try {
-        await loadAll({
-          forceRefresh: true,
-        });
-      } finally {
-        setRefreshing(false);
-      }
-    }, [loadAll]);
+        try {
+          await loadAll({
+            forceRefresh: true,
+          });
+        } finally {
+          setRefreshing(false);
+        }
+      },
+      [loadAll]
+    );
 
   const displayedMatches =
     useMemo(() => {
-      const sorted = [
+      return [
         ...matches,
-      ].sort(
-        (a, b) =>
-          new Date(
-            a.date || 0
-          ).getTime() -
-          new Date(
-            b.date || 0
-          ).getTime()
-      );
-
-      return sorted.filter(
-        (match) =>
-          !liveMatches.some(
-            (live) =>
-              live.id === match.id
-          )
-      );
+      ]
+        .sort(
+          (a, b) =>
+            new Date(
+              a.date || 0
+            ).getTime() -
+            new Date(
+              b.date || 0
+            ).getTime()
+        )
+        .filter(
+          (match) =>
+            !liveMatches.some(
+              (live) =>
+                live.id === match.id
+            )
+        );
     }, [
       matches,
       liveMatches,
@@ -443,13 +377,6 @@ export default function HomeScreen() {
   const hasData =
     liveMatches.length > 0 ||
     displayedMatches.length > 0;
-
-  const selectedLabel =
-    isToday
-      ? "AUJOURD'HUI"
-      : formatDateLabel(
-          selectedDateObject
-        );
 
   return (
     <View
@@ -472,141 +399,10 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={
-              SKY_BLUE
-            }
+            tintColor="#63BFE8"
           />
         }
       >
-        <View
-          style={[
-            styles.topBlock,
-            {
-              backgroundColor:
-                SKY_BLUE,
-            },
-          ]}
-        >
-          <View
-            style={styles.topActions}
-          >
-            <Text
-              style={styles.appTitle}
-            >
-              GeSoccer
-            </Text>
-
-            <View
-              style={
-                styles.topRight
-              }
-            >
-              <Ionicons
-                name="calendar-outline"
-                size={20}
-                color="#FFFFFF"
-              />
-
-              <Ionicons
-                name="search-outline"
-                size={20}
-                color="#FFFFFF"
-              />
-            </View>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={
-              false
-            }
-            contentContainerStyle={
-              styles.dateScroller
-            }
-          >
-            {dates.map((item) => {
-              const selected =
-                item.key ===
-                selectedDate;
-
-              const itemIsToday =
-                item.key ===
-                todayKey;
-
-              const itemIsYesterday =
-                item.key ===
-                getDateKey(
-                  addDays(
-                    new Date(),
-                    -1
-                  )
-                );
-
-              const itemIsTomorrow =
-                item.key ===
-                getDateKey(
-                  addDays(
-                    new Date(),
-                    1
-                  )
-                );
-
-              let specialLabel = "";
-
-              if (itemIsToday) {
-                specialLabel =
-                  "AUJOURD'HUI";
-              } else if (
-                itemIsYesterday
-              ) {
-                specialLabel =
-                  "HIER";
-              } else if (
-                itemIsTomorrow
-              ) {
-                specialLabel =
-                  "DEMAIN";
-              }
-
-              return (
-                <TouchableOpacity
-                  key={item.key}
-                  activeOpacity={0.8}
-                  onPress={() =>
-                    setSelectedDate(
-                      item.key
-                    )
-                  }
-                  style={[
-                    styles.dateItem,
-                    selected &&
-                      styles.dateItemSelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.dateText,
-                      selected &&
-                        styles.dateTextSelected,
-                    ]}
-                  >
-                    {specialLabel ||
-                      item.label}
-                  </Text>
-
-                  {selected && (
-                    <View
-                      style={
-                        styles.dateIndicator
-                      }
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
         <View
           style={styles.matchesHeader}
         >
@@ -620,7 +416,9 @@ export default function HomeScreen() {
                 },
               ]}
             >
-              {selectedLabel}
+              {liveMode
+                ? "EN DIRECT"
+                : "MATCHS"}
             </Text>
 
             <Text
@@ -646,47 +444,214 @@ export default function HomeScreen() {
               },
             ]}
           >
-            {displayedMatches.length +
-              liveMatches.length}
+            {liveMode
+              ? liveMatches.length
+              : displayedMatches.length}
           </Text>
         </View>
 
-        {liveMatches.length >
-          0 && (
+        {liveMode &&
+          liveMatches.length >
+            0 && (
+            <View
+              style={styles.section}
+            >
+              <View
+                style={
+                  styles.sectionTitleRow
+                }
+              >
+                <View
+                  style={styles.liveDot}
+                />
+
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    {
+                      color:
+                        colors.text,
+                    },
+                  ]}
+                >
+                  {t.live ||
+                    "En direct"}
+                </Text>
+              </View>
+
+              {liveMatches.map(
+                (match) => (
+                  <MatchCard
+                    key={`live-${match.id}`}
+                    match={{
+                      ...match,
+                      status:
+                        "live",
+                    }}
+                  />
+                )
+              )}
+            </View>
+          )}
+
+        {!liveMode && (
           <View
             style={styles.section}
           >
-            <View
-              style={
-                styles.sectionTitleRow
-              }
-            >
-              <View
-                style={styles.liveDot}
-              />
+            {loading &&
+              !hasData && (
+                <View
+                  style={styles.center}
+                >
+                  <ActivityIndicator
+                    size="large"
+                    color="#63BFE8"
+                  />
 
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  {
-                    color:
-                      colors.text,
-                  },
-                ]}
-              >
-                {t.live ||
-                  "En direct"}
-              </Text>
-            </View>
+                  <Text
+                    style={[
+                      styles.loadingText,
+                      {
+                        color:
+                          colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    Chargement des
+                    matchs...
+                  </Text>
+                </View>
+              )}
 
-            {liveMatches.map(
+            {!loading &&
+              error &&
+              !hasData && (
+                <View
+                  style={[
+                    styles.errorBox,
+                    {
+                      backgroundColor:
+                        colors.surface,
+                      borderColor:
+                        colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="cloud-offline-outline"
+                    size={32}
+                    color={brand.red}
+                  />
+
+                  <Text
+                    style={[
+                      styles.errorTitle,
+                      {
+                        color:
+                          colors.text,
+                      },
+                    ]}
+                  >
+                    Impossible de
+                    charger
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.errorText,
+                      {
+                        color:
+                          colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {error}
+                  </Text>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() =>
+                      loadAll({
+                        forceRefresh:
+                          true,
+                      })
+                    }
+                    style={
+                      styles.retryButton
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.retryText
+                      }
+                    >
+                      Réessayer
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+            {!loading &&
+              !error &&
+              displayedMatches.length ===
+                0 && (
+                <View
+                  style={[
+                    styles.emptyBox,
+                    {
+                      backgroundColor:
+                        colors.surface,
+                      borderColor:
+                        colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="football-outline"
+                    size={40}
+                    color={
+                      colors.textSecondary
+                    }
+                  />
+
+                  <Text
+                    style={[
+                      styles.emptyTitle,
+                      {
+                        color:
+                          colors.text,
+                      },
+                    ]}
+                  >
+                    Aucun match
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      {
+                        color:
+                          colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    Aucun match
+                    disponible pour
+                    cette date.
+                  </Text>
+                </View>
+              )}
+
+            {displayedMatches.map(
               (match) => (
                 <MatchCard
-                  key={`live-${match.id}`}
+                  key={match.id}
                   match={{
                     ...match,
                     status:
-                      "live",
+                      isFinished(match)
+                        ? "finished"
+                        : "upcoming",
                   }}
                 />
               )
@@ -694,178 +659,55 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <View
-          style={styles.section}
-        >
-          {loading &&
-            !hasData && (
-              <View
-                style={styles.center}
-              >
-                <ActivityIndicator
-                  size="large"
-                  color={
-                    SKY_BLUE
-                  }
-                />
-
-                <Text
-                  style={[
-                    styles.loadingText,
-                    {
-                      color:
-                        colors.textSecondary,
-                    },
-                  ]}
-                >
-                  Chargement des
-                  matchs...
-                </Text>
-              </View>
-            )}
-
-          {!loading &&
-            error &&
-            !hasData && (
-              <View
-                style={[
-                  styles.errorBox,
-                  {
-                    backgroundColor:
-                      colors.surface,
-                    borderColor:
-                      colors.border,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="cloud-offline-outline"
-                  size={32}
-                  color={
-                    brand.red
-                  }
-                />
-
-                <Text
-                  style={[
-                    styles.errorTitle,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  Impossible de
-                  charger
-                </Text>
-
-                <Text
-                  style={[
-                    styles.errorText,
-                    {
-                      color:
-                        colors.textSecondary,
-                    },
-                  ]}
-                >
-                  {error}
-                </Text>
-
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() =>
-                    loadAll({
-                      forceRefresh:
-                        true,
-                    })
-                  }
-                  style={[
-                    styles.retryButton,
-                    {
-                      backgroundColor:
-                        SKY_BLUE,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={
-                      styles.retryText
-                    }
-                  >
-                    Réessayer
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-          {!loading &&
-            !error &&
-            displayedMatches.length ===
-              0 &&
-            liveMatches.length ===
-              0 && (
-              <View
-                style={[
-                  styles.emptyBox,
-                  {
-                    backgroundColor:
-                      colors.surface,
-                    borderColor:
-                      colors.border,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="football-outline"
-                  size={40}
-                  color={
-                    colors.textSecondary
-                  }
-                />
-
-                <Text
-                  style={[
-                    styles.emptyTitle,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  Aucun match
-                </Text>
-
-                <Text
-                  style={[
-                    styles.emptyText,
-                    {
-                      color:
-                        colors.textSecondary,
-                    },
-                  ]}
-                >
-                  Aucun match
-                  disponible pour
-                  cette date.
-                </Text>
-              </View>
-            )}
-
-          {displayedMatches.map(
-            (match) => (
-              <MatchCard
-                key={match.id}
-                match={{
-                  ...match,
-                  status:
-                    isFinished(match)
-                      ? "finished"
-                      : "upcoming",
-                }}
+        {liveMode &&
+          !loading &&
+          liveMatches.length ===
+            0 && (
+            <View
+              style={[
+                styles.emptyBox,
+                {
+                  backgroundColor:
+                    colors.surface,
+                  borderColor:
+                    colors.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name="radio-outline"
+                size={40}
+                color={
+                  colors.textSecondary
+                }
               />
-            )
+
+              <Text
+                style={[
+                  styles.emptyTitle,
+                  {
+                    color:
+                      colors.text,
+                  },
+                ]}
+              >
+                Aucun match en direct
+              </Text>
+
+              <Text
+                style={[
+                  styles.emptyText,
+                  {
+                    color:
+                      colors.textSecondary,
+                  },
+                ]}
+              >
+                Aucun match n'est
+                actuellement en direct.
+              </Text>
+            </View>
           )}
-        </View>
       </ScrollView>
     </View>
   );
@@ -877,76 +719,8 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
+    paddingTop: 4,
     paddingBottom: 120,
-  },
-
-  topBlock: {
-    paddingTop: 8,
-    paddingBottom: 0,
-  },
-
-  topActions: {
-    minHeight: 74,
-    paddingHorizontal: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent:
-      "space-between",
-  },
-
-  appTitle: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "900",
-  },
-
-  topRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 18,
-  },
-
-  dateScroller: {
-    paddingHorizontal: 12,
-    paddingBottom: 10,
-  },
-
-  dateItem: {
-    minWidth: 76,
-    height: 42,
-    marginHorizontal: 3,
-    paddingHorizontal: 8,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent:
-      "center",
-  },
-
-  dateItemSelected: {
-    backgroundColor:
-      "rgba(255,255,255,0.22)",
-  },
-
-  dateText: {
-    color:
-      "rgba(255,255,255,0.78)",
-    fontSize: 11,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-
-  dateTextSelected: {
-    color: "#FFFFFF",
-  },
-
-  dateIndicator: {
-    position: "absolute",
-    bottom: 4,
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor:
-      "#FFFFFF",
   },
 
   matchesHeader: {
@@ -955,8 +729,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "flex-end",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
   },
 
   matchesSmall: {
@@ -996,16 +769,14 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor:
-      "#E74747",
+    backgroundColor: "#E74747",
     marginRight: 8,
   },
 
   center: {
     minHeight: 180,
     alignItems: "center",
-    justifyContent:
-      "center",
+    justifyContent: "center",
   },
 
   loadingText: {
@@ -1038,6 +809,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 11,
     borderRadius: 14,
+    backgroundColor: "#63BFE8",
   },
 
   retryText: {
