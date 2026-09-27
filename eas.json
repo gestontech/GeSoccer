@@ -7,7 +7,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_GESOCCER_API_URL": "https://ge-soccer.vercel.app/api/football"
+        "EXPO_PUBLIC_GESOCCER_API_URL": "https://TON-APP-HEROKU.herokuapp.com/api/football"
       }
     },
     "preview": {
@@ -19,7 +19,7 @@
         "distribution": "internal"
       },
       "env": {
-        "EXPO_PUBLIC_GESOCCER_API_URL": "https://ge-soccer.vercel.app/api/football"
+        "EXPO_PUBLIC_GESOCCER_API_URL": "https://TON-APP-HEROKU.herokuapp.com/api/football"
       }
     },
     "production": {
@@ -30,7 +30,7 @@
         "distribution": "store"
       },
       "env": {
-        "EXPO_PUBLIC_GESOCCER_API_URL": "https://ge-soccer.vercel.app/api/football"
+        "EXPO_PUBLIC_GESOCCER_API_URL": "https://TON-APP-HEROKU.herokuapp.com/api/football"
       }
     }
   }
