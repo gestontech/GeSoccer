@@ -19,36 +19,22 @@ function formatKickoff(date) {
     return "--:--";
   }
 
-  const value =
-    new Date(date);
+  const value = new Date(date);
 
-  if (
-    Number.isNaN(
-      value.getTime()
-    )
-  ) {
+  if (Number.isNaN(value.getTime())) {
     return "--:--";
   }
 
-  return value.toLocaleTimeString(
-    [],
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-    }
-  );
+  return value.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function getStatusLabel(match) {
   if (
     match.status === "live" ||
-    [
-      "1H",
-      "2H",
-      "ET",
-      "P",
-      "LIVE",
-    ].includes(
+    ["1H", "2H", "ET", "P", "LIVE"].includes(
       match.shortStatus
     )
   ) {
@@ -63,20 +49,14 @@ function getStatusLabel(match) {
   }
 
   if (
-    [
-      "FT",
-      "AET",
-      "PEN",
-    ].includes(
+    ["FT", "AET", "PEN"].includes(
       match.shortStatus
     )
   ) {
     return "TERMINÉ";
   }
 
-  return formatKickoff(
-    match.date
-  );
+  return formatKickoff(match.date);
 }
 
 function Team({
@@ -84,14 +64,17 @@ function Team({
   logo,
   score,
   colors,
+  onPress,
 }) {
   return (
-    <View style={styles.team}>
+    <TouchableOpacity
+      activeOpacity={0.75}
+      onPress={onPress}
+      style={styles.team}
+    >
       {logo ? (
         <Image
-          source={{
-            uri: logo,
-          }}
+          source={{ uri: logo }}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -108,20 +91,17 @@ function Team({
           <Ionicons
             name="football-outline"
             size={18}
-            color={
-              colors.textSecondary
-            }
+            color={colors.textSecondary}
           />
         </View>
       )}
 
       <Text
-        numberOfLines={1}
+        numberOfLines={2}
         style={[
           styles.teamName,
           {
-            color:
-              colors.text,
+            color: colors.text,
           },
         ]}
       >
@@ -132,8 +112,7 @@ function Team({
         style={[
           styles.score,
           {
-            color:
-              colors.text,
+            color: colors.text,
           },
         ]}
       >
@@ -142,7 +121,7 @@ function Team({
           ? score
           : "-"}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -156,13 +135,7 @@ export default function MatchCard({
 
   const live =
     match.status === "live" ||
-    [
-      "1H",
-      "2H",
-      "ET",
-      "P",
-      "LIVE",
-    ].includes(
+    ["1H", "2H", "ET", "P", "LIVE"].includes(
       match.shortStatus
     );
 
@@ -182,9 +155,37 @@ export default function MatchCard({
     });
   }
 
+  function openTeam(teamId) {
+    if (!teamId) {
+      openMatch();
+      return;
+    }
+
+    router.push({
+      pathname: "/team/[id]",
+      params: {
+        id: String(teamId),
+      },
+    });
+  }
+
+  function openCompetition() {
+    if (!match?.leagueId) {
+      openMatch();
+      return;
+    }
+
+    router.push({
+      pathname: "/competition/[id]",
+      params: {
+        id: String(match.leagueId),
+      },
+    });
+  }
+
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
+      activeOpacity={0.88}
       onPress={openMatch}
       style={styles.wrapper}
     >
@@ -193,17 +194,16 @@ export default function MatchCard({
         style={[
           styles.card,
           {
-            borderColor:
-              live
-                ? "rgba(231,71,71,0.32)"
-                : colors.border,
+            borderColor: live
+              ? "rgba(231,71,71,0.32)"
+              : colors.border,
           },
         ]}
       >
-        <View
-          style={styles.top}
-        >
-          <View
+        <View style={styles.top}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={openCompetition}
             style={styles.competition}
           >
             {match.competitionLogo ? (
@@ -237,26 +237,24 @@ export default function MatchCard({
                 },
               ]}
             >
-              {match.competition}
+              {match.competition ||
+                "Football"}
             </Text>
-          </View>
+          </TouchableOpacity>
 
           <View
             style={[
               styles.status,
               {
-                backgroundColor:
-                  live
-                    ? "rgba(231,71,71,0.13)"
-                    : "rgba(128,128,128,0.10)",
+                backgroundColor: live
+                  ? "rgba(231,71,71,0.13)"
+                  : "rgba(128,128,128,0.10)",
               },
             ]}
           >
             {live && (
               <View
-                style={
-                  styles.statusDot
-                }
+                style={styles.statusDot}
               />
             )}
 
@@ -275,25 +273,18 @@ export default function MatchCard({
           </View>
         </View>
 
-        <View
-          style={styles.teams}
-        >
+        <View style={styles.teams}>
           <Team
-            name={
-              match.homeTeam
-            }
-            logo={
-              match.homeLogo
-            }
-            score={
-              match.homeScore
-            }
+            name={match.homeTeam}
+            logo={match.homeLogo}
+            score={match.homeScore}
             colors={colors}
+            onPress={() =>
+              openTeam(match.homeTeamId)
+            }
           />
 
-          <View
-            style={styles.middle}
-          >
+          <View style={styles.middle}>
             <Text
               style={[
                 styles.vs,
@@ -323,16 +314,13 @@ export default function MatchCard({
           </View>
 
           <Team
-            name={
-              match.awayTeam
-            }
-            logo={
-              match.awayLogo
-            }
-            score={
-              match.awayScore
-            }
+            name={match.awayTeam}
+            logo={match.awayLogo}
+            score={match.awayScore}
             colors={colors}
+            onPress={() =>
+              openTeam(match.awayTeamId)
+            }
           />
         </View>
 
@@ -359,13 +347,26 @@ export default function MatchCard({
               "Football"}
           </Text>
 
-          <Ionicons
-            name="chevron-forward"
-            size={17}
-            color={
-              colors.textSecondary
-            }
-          />
+          <View
+            style={styles.details}
+          >
+            <Text
+              style={[
+                styles.detailsText,
+                {
+                  color: brand.green,
+                },
+              ]}
+            >
+              Détails
+            </Text>
+
+            <Ionicons
+              name="chevron-forward"
+              size={17}
+              color={brand.green}
+            />
+          </View>
         </View>
       </Glass>
     </TouchableOpacity>
@@ -442,15 +443,15 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: 38,
-    height: 38,
+    width: 42,
+    height: 42,
     marginBottom: 7,
   },
 
   logoFallback: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 7,
@@ -458,6 +459,7 @@ const styles = StyleSheet.create({
 
   teamName: {
     width: "100%",
+    minHeight: 34,
     textAlign: "center",
     fontSize: 13,
     fontWeight: "800",
@@ -500,5 +502,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 10,
     fontWeight: "600",
+  },
+
+  details: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  detailsText: {
+    fontSize: 11,
+    fontWeight: "800",
+    marginRight: 2,
   },
 });
