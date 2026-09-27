@@ -26,7 +26,6 @@ export default function AppHeader() {
         },
       ]}
     >
-      {/* Menu */}
       <TouchableOpacity
         style={styles.button}
         activeOpacity={0.75}
@@ -39,9 +38,7 @@ export default function AppHeader() {
         </View>
       </TouchableOpacity>
 
-      {/* Actions droite */}
       <View style={styles.rightActions}>
-        {/* Calendrier */}
         <TouchableOpacity
           style={styles.button}
           activeOpacity={0.75}
@@ -54,7 +51,6 @@ export default function AppHeader() {
           />
         </TouchableOpacity>
 
-        {/* Recherche */}
         <TouchableOpacity
           style={styles.button}
           activeOpacity={0.75}
