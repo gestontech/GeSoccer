@@ -26,6 +26,9 @@
       "android": {
         "buildType": "app-bundle"
       },
+      "ios": {
+        "distribution": "store"
+      },
       "env": {
         "EXPO_PUBLIC_GESOCCER_API_URL": "https://ge-soccer.vercel.app/api/football"
       }
