@@ -13,7 +13,7 @@ const ALLOWED_ENDPOINTS = new Set([
   "players",
   "topscorers",
   "transfers",
-  "leagues",
+  "leagues"
 ]);
 
 function getQueryValue(value) {
@@ -25,7 +25,7 @@ app.get("/api/football", async (req, res) => {
 
   if (!ALLOWED_ENDPOINTS.has(String(endpoint || ""))) {
     return res.status(400).json({
-      error: "Invalid football endpoint",
+      error: "Invalid football endpoint"
     });
   }
 
@@ -33,7 +33,7 @@ app.get("/api/football", async (req, res) => {
 
   if (!apiKey) {
     return res.status(500).json({
-      error: "API_FOOTBALL_KEY is not configured.",
+      error: "API_FOOTBALL_KEY is not configured."
     });
   }
 
@@ -51,7 +51,11 @@ app.get("/api/football", async (req, res) => {
 
     if (Array.isArray(value)) {
       for (const item of value) {
-        if (item !== undefined && item !== null && item !== "") {
+        if (
+          item !== undefined &&
+          item !== null &&
+          item !== ""
+        ) {
           params.append(key, String(item));
         }
       }
@@ -71,8 +75,8 @@ app.get("/api/football", async (req, res) => {
       method: "GET",
       headers: {
         Accept: "application/json",
-        "x-apisports-key": apiKey,
-      },
+        "x-apisports-key": apiKey
+      }
     });
 
     const body = await response.text();
@@ -89,7 +93,7 @@ app.get("/api/football", async (req, res) => {
   } catch (error) {
     return res.status(502).json({
       error: "Football provider unavailable",
-      message: error?.message || "Unknown error",
+      message: error?.message || "Unknown error"
     });
   }
 });
@@ -98,7 +102,7 @@ app.use(express.static("dist"));
 
 app.get(/.*/, (req, res) => {
   res.sendFile("index.html", {
-    root: "dist",
+    root: "dist"
   });
 });
 
