@@ -2,7 +2,9 @@ import React from "react";
 
 import {
   View,
+  Text,
   TouchableOpacity,
+  ScrollView,
   StyleSheet,
 } from "react-native";
 
@@ -10,14 +12,43 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 
-import { router } from "expo-router";
+import {
+  router,
+} from "expo-router";
 
-import { useAppTheme } from "../../theme/useAppTheme";
+import {
+  useDateSelection,
+} from "../../context/DateSelectionContext";
 
 const SKY_BLUE = "#63BFE8";
 
 export default function AppHeader() {
-  const { brand } = useAppTheme();
+  const {
+    dates,
+    todayKey,
+    yesterdayKey,
+    tomorrowKey,
+    selectedDate,
+    liveMode,
+    selectDate,
+    selectLive,
+  } = useDateSelection();
+
+  const getDateLabel = (item) => {
+    if (item.key === yesterdayKey) {
+      return "HIER";
+    }
+
+    if (item.key === todayKey) {
+      return "AUJOURD'HUI";
+    }
+
+    if (item.key === tomorrowKey) {
+      return "DEMAIN";
+    }
+
+    return item.label;
+  };
 
   return (
     <View
@@ -28,64 +59,145 @@ export default function AppHeader() {
         },
       ]}
     >
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.75}
-        onPress={() => router.push("/settings")}
-      >
-        <View style={styles.menu}>
-          <View style={styles.line} />
-          <View style={styles.line} />
-          <View style={styles.line} />
+      <View style={styles.topRow}>
+        <TouchableOpacity
+          style={styles.menuButton}
+          activeOpacity={0.75}
+          onPress={() => router.push("/settings")}
+        >
+          <View style={styles.menu}>
+            <View style={styles.line} />
+            <View style={styles.line} />
+            <View style={styles.line} />
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.rightActions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.75}
+            onPress={() =>
+              router.push("/calendar")
+            }
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={20}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.75}
+            onPress={() =>
+              router.push("/search")
+            }
+          >
+            <Ionicons
+              name="search-outline"
+              size={20}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
-
-      <View style={styles.rightActions}>
-        <TouchableOpacity
-          style={styles.button}
-          activeOpacity={0.75}
-          onPress={() => router.push("/calendar")}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={20}
-            color="#FFFFFF"
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          activeOpacity={0.75}
-          onPress={() => router.push("/search")}
-        >
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color="#FFFFFF"
-          />
-        </TouchableOpacity>
       </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={
+          styles.dateScroller
+        }
+      >
+        {dates.map((item) => {
+          const selected =
+            !liveMode &&
+            item.key === selectedDate;
+
+          return (
+            <TouchableOpacity
+              key={item.key}
+              activeOpacity={0.8}
+              onPress={() =>
+                selectDate(item.key)
+              }
+              style={[
+                styles.dateItem,
+                selected &&
+                  styles.dateItemSelected,
+              ]}
+            >
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.dateText,
+                  selected &&
+                    styles.dateTextSelected,
+                ]}
+              >
+                {getDateLabel(item)}
+              </Text>
+
+              {selected && (
+                <View
+                  style={
+                    styles.dateIndicator
+                  }
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={selectLive}
+          style={[
+            styles.dateItem,
+            liveMode &&
+              styles.dateItemSelected,
+          ]}
+        >
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.dateText,
+              liveMode &&
+                styles.dateTextSelected,
+            ]}
+          >
+            EN DIRECT
+          </Text>
+
+          {liveMode && (
+            <View
+              style={styles.dateIndicator}
+            />
+          )}
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    height: 88,
+    height: 126,
+    width: "100%",
+    elevation: 8,
+    shadowOpacity: 0,
+  },
+
+  topRow: {
+    height: 78,
+    paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    elevation: 8,
   },
 
-  rightActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-
-  button: {
+  menuButton: {
     width: 42,
     height: 42,
     alignItems: "center",
@@ -102,6 +214,62 @@ const styles = StyleSheet.create({
   line: {
     width: 20,
     height: 2.5,
+    borderRadius: 3,
+    backgroundColor: "#FFFFFF",
+  },
+
+  rightActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+
+  actionButton: {
+    width: 42,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  dateScroller: {
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+    alignItems: "center",
+  },
+
+  dateItem: {
+    minWidth: 72,
+    height: 40,
+    marginHorizontal: 2,
+    paddingHorizontal: 8,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+
+  dateItemSelected: {
+    backgroundColor:
+      "rgba(255,255,255,0.22)",
+  },
+
+  dateText: {
+    color:
+      "rgba(255,255,255,0.78)",
+    fontSize: 11,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+
+  dateTextSelected: {
+    color: "#FFFFFF",
+  },
+
+  dateIndicator: {
+    position: "absolute",
+    bottom: 3,
+    width: 5,
+    height: 5,
     borderRadius: 3,
     backgroundColor: "#FFFFFF",
   },
