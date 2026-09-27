@@ -2,6 +2,7 @@ const API_FOOTBALL_URL = "https://v3.football.api-sports.io";
 
 const ALLOWED_ENDPOINTS = new Set([
   "fixtures",
+  "live",
   "standings",
   "teams",
   "players",
@@ -99,16 +100,14 @@ export default async function handler(req, res) {
 
     res.setHeader(
       "Content-Type",
-      response.headers.get("content-type") ||
-        "application/json"
+      response.headers.get("content-type") || "application/json"
     );
 
     res.send(body);
   } catch (error) {
     res.status(502).json({
       error: "Football provider unavailable",
-      message:
-        error?.message || "Unknown error",
+      message: error?.message || "Unknown error",
     });
   }
 }
