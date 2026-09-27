@@ -91,7 +91,9 @@ function Team({
           <Ionicons
             name="football-outline"
             size={18}
-            color={colors.textSecondary}
+            color={
+              colors.textSecondary
+            }
           />
         </View>
       )}
@@ -128,19 +130,14 @@ function Team({
 export default function MatchCard({
   match,
 }) {
-  const {
-    colors,
-    brand,
-  } = useAppTheme();
+  const { colors, brand } =
+    useAppTheme();
 
   const live =
     match.status === "live" ||
     ["1H", "2H", "ET", "P", "LIVE"].includes(
       match.shortStatus
     );
-
-  const statusLabel =
-    getStatusLabel(match);
 
   function openMatch() {
     if (!match?.id) {
@@ -157,7 +154,6 @@ export default function MatchCard({
 
   function openTeam(teamId) {
     if (!teamId) {
-      openMatch();
       return;
     }
 
@@ -171,21 +167,23 @@ export default function MatchCard({
 
   function openCompetition() {
     if (!match?.leagueId) {
-      openMatch();
       return;
     }
 
     router.push({
-      pathname: "/competition/[id]",
+      pathname:
+        "/competition/[id]",
       params: {
-        id: String(match.leagueId),
+        id: String(
+          match.leagueId
+        ),
       },
     });
   }
 
   return (
     <TouchableOpacity
-      activeOpacity={0.88}
+      activeOpacity={0.9}
       onPress={openMatch}
       style={styles.wrapper}
     >
@@ -203,7 +201,9 @@ export default function MatchCard({
         <View style={styles.top}>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={openCompetition}
+            onPress={
+              openCompetition
+            }
             style={styles.competition}
           >
             {match.competitionLogo ? (
@@ -215,7 +215,6 @@ export default function MatchCard({
                 style={
                   styles.competitionLogo
                 }
-                resizeMode="contain"
               />
             ) : (
               <Ionicons
@@ -254,7 +253,9 @@ export default function MatchCard({
           >
             {live && (
               <View
-                style={styles.statusDot}
+                style={
+                  styles.statusDot
+                }
               />
             )}
 
@@ -268,7 +269,7 @@ export default function MatchCard({
                 },
               ]}
             >
-              {statusLabel}
+              {getStatusLabel(match)}
             </Text>
           </View>
         </View>
@@ -280,11 +281,15 @@ export default function MatchCard({
             score={match.homeScore}
             colors={colors}
             onPress={() =>
-              openTeam(match.homeTeamId)
+              openTeam(
+                match.homeTeamId
+              )
             }
           />
 
-          <View style={styles.middle}>
+          <View
+            style={styles.middle}
+          >
             <Text
               style={[
                 styles.vs,
@@ -319,7 +324,9 @@ export default function MatchCard({
             score={match.awayScore}
             colors={colors}
             onPress={() =>
-              openTeam(match.awayTeamId)
+              openTeam(
+                match.awayTeamId
+              )
             }
           />
         </View>
@@ -354,7 +361,8 @@ export default function MatchCard({
               style={[
                 styles.detailsText,
                 {
-                  color: brand.green,
+                  color:
+                    brand.green,
                 },
               ]}
             >
@@ -388,7 +396,8 @@ const styles = StyleSheet.create({
   top: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
   },
 
   competition: {
@@ -495,7 +504,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
   },
 
   country: {
