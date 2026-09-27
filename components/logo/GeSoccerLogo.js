@@ -1,22 +1,20 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Svg, {
   Circle,
   Defs,
+  G,
   LinearGradient,
-  RadialGradient,
-  Stop,
   Path,
   Polygon,
-  G,
+  RadialGradient,
+  Stop,
 } from "react-native-svg";
 
 export default function GeSoccerLogo({
-  size = 96,
+  size = 88,
   showShadow = true,
 }) {
-  const scale = size / 1024;
-
   return (
     <View
       style={[
@@ -24,7 +22,7 @@ export default function GeSoccerLogo({
         {
           width: size,
           height: size,
-          borderRadius: size * 0.23,
+          borderRadius: size * 0.24,
         },
         showShadow && styles.shadow,
       ]}
@@ -35,20 +33,27 @@ export default function GeSoccerLogo({
         viewBox="0 0 1024 1024"
       >
         <Defs>
-          {/* Fond vert GeSoccer */}
           <LinearGradient
-            id="background"
+            id="bg"
             x1="0"
             y1="0"
             x2="1"
             y2="1"
           >
-            <Stop offset="0" stopColor="#6BAF43" />
-            <Stop offset="0.45" stopColor="#4B842F" />
-            <Stop offset="1" stopColor="#28551F" />
+            <Stop
+              offset="0"
+              stopColor="#72B94B"
+            />
+            <Stop
+              offset="0.5"
+              stopColor="#4B842F"
+            />
+            <Stop
+              offset="1"
+              stopColor="#244C1C"
+            />
           </LinearGradient>
 
-          {/* Effet verre */}
           <LinearGradient
             id="glass"
             x1="0"
@@ -59,7 +64,7 @@ export default function GeSoccerLogo({
             <Stop
               offset="0"
               stopColor="#FFFFFF"
-              stopOpacity="0.38"
+              stopOpacity="0.42"
             />
             <Stop
               offset="0.45"
@@ -73,22 +78,21 @@ export default function GeSoccerLogo({
             />
           </LinearGradient>
 
-          {/* Reflet */}
           <RadialGradient
-            id="highlight"
-            cx="30%"
-            cy="20%"
+            id="shine"
+            cx="28%"
+            cy="18%"
             r="80%"
           >
             <Stop
               offset="0"
               stopColor="#FFFFFF"
-              stopOpacity="0.65"
+              stopOpacity="0.7"
             />
             <Stop
-              offset="0.4"
+              offset="0.35"
               stopColor="#FFFFFF"
-              stopOpacity="0.12"
+              stopOpacity="0.14"
             />
             <Stop
               offset="1"
@@ -97,73 +101,81 @@ export default function GeSoccerLogo({
             />
           </RadialGradient>
 
-          {/* Ballon */}
           <RadialGradient
             id="ball"
-            cx="32%"
-            cy="25%"
+            cx="30%"
+            cy="24%"
             r="75%"
           >
-            <Stop offset="0" stopColor="#FFFFFF" />
-            <Stop offset="0.7" stopColor="#F4F7F3" />
-            <Stop offset="1" stopColor="#D8E2D6" />
+            <Stop
+              offset="0"
+              stopColor="#FFFFFF"
+            />
+            <Stop
+              offset="0.72"
+              stopColor="#F5F8F4"
+            />
+            <Stop
+              offset="1"
+              stopColor="#D7E2D5"
+            />
           </RadialGradient>
         </Defs>
 
-        {/* Fond principal */}
+        {/* Fond */}
         <Circle
           cx="512"
           cy="512"
           r="500"
-          fill="url(#background)"
+          fill="url(#bg)"
         />
 
-        {/* Couche Liquid Glass */}
+        {/* Verre */}
         <Circle
           cx="512"
           cy="512"
-          r="475"
+          r="470"
           fill="url(#glass)"
           stroke="#FFFFFF"
           strokeOpacity="0.28"
           strokeWidth="10"
         />
 
-        {/* Anneau dynamique */}
+        {/* Anneau principal */}
         <Circle
           cx="512"
           cy="512"
           r="365"
           fill="none"
           stroke="#FFFFFF"
-          strokeOpacity="0.88"
-          strokeWidth="28"
-          strokeDasharray="980 300"
+          strokeOpacity="0.9"
+          strokeWidth="27"
+          strokeDasharray="990 300"
           strokeLinecap="round"
-          transform="rotate(-28 512 512)"
+          transform="rotate(-30 512 512)"
         />
 
-        {/* Deuxième reflet de l'anneau */}
+        {/* Anneau secondaire */}
         <Circle
           cx="512"
           cy="512"
           r="405"
           fill="none"
           stroke="#FFFFFF"
-          strokeOpacity="0.16"
+          strokeOpacity="0.18"
           strokeWidth="12"
-          strokeDasharray="260 900"
+          strokeDasharray="250 950"
           strokeLinecap="round"
-          transform="rotate(125 512 512)"
+          transform="rotate(120 512 512)"
         />
 
-        {/* Halo du ballon */}
+        {/* Halo */}
         <Circle
           cx="512"
           cy="512"
-          r="250"
+          r="255"
           fill="#FFFFFF"
-          fillOpacity="0.10"
+          fillOpacity="0.1"
         />
 
         {/* Ballon */}
@@ -176,73 +188,62 @@ export default function GeSoccerLogo({
           strokeWidth="8"
         />
 
-        {/* Motif central du ballon */}
+        {/* Motif du ballon */}
         <G>
           <Polygon
             points="512,418 565,457 545,520 479,520 459,457"
             fill="#4B842F"
           />
 
-          {/* Branche supérieure */}
           <Path
             d="M512 418 L512 370"
-            fill="none"
             stroke="#4B842F"
             strokeWidth="18"
             strokeLinecap="round"
           />
 
-          {/* Branche haut droite */}
           <Path
             d="M565 457 L622 425"
-            fill="none"
             stroke="#4B842F"
             strokeWidth="18"
             strokeLinecap="round"
           />
 
-          {/* Branche bas droite */}
           <Path
             d="M545 520 L580 575"
-            fill="none"
             stroke="#4B842F"
             strokeWidth="18"
             strokeLinecap="round"
           />
 
-          {/* Branche bas gauche */}
           <Path
             d="M479 520 L444 575"
-            fill="none"
             stroke="#4B842F"
             strokeWidth="18"
             strokeLinecap="round"
           />
 
-          {/* Branche haut gauche */}
           <Path
             d="M459 457 L402 425"
-            fill="none"
             stroke="#4B842F"
             strokeWidth="18"
             strokeLinecap="round"
           />
         </G>
 
-        {/* Reflet Liquid Glass */}
+        {/* Reflet */}
         <Circle
           cx="512"
           cy="512"
-          r="475"
-          fill="url(#highlight)"
+          r="470"
+          fill="url(#shine)"
         />
 
-        {/* Petit reflet supérieur */}
         <Path
-          d="M175 285 C300 125 515 105 690 175"
+          d="M180 282 C300 130 510 105 690 175"
           fill="none"
           stroke="#FFFFFF"
-          strokeOpacity="0.35"
+          strokeOpacity="0.34"
           strokeWidth="24"
           strokeLinecap="round"
         />
@@ -257,13 +258,13 @@ const styles = StyleSheet.create({
   },
 
   shadow: {
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOffset: {
       width: 0,
-      height: 12,
+      height: 10,
     },
     shadowOpacity: 0.22,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowRadius: 18,
+    elevation: 10,
   },
 });
