@@ -17,9 +17,7 @@ import {
   View,
 } from "react-native";
 
-import {
-  Ionicons,
-} from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
 import {
   router,
@@ -27,12 +25,8 @@ import {
 } from "expo-router";
 
 import Glass from "../../components/glass/Glass";
-import {
-  footballApi,
-} from "../../services/football";
-import {
-  useAppTheme,
-} from "../../theme/useAppTheme";
+import { footballApi } from "../../services/football";
+import { useAppTheme } from "../../theme/useAppTheme";
 
 function formatDate(value) {
   if (!value) {
@@ -76,78 +70,41 @@ function formatTime(value) {
   );
 }
 
+function isLive(status) {
+  return [
+    "1H",
+    "2H",
+    "ET",
+    "P",
+    "LIVE",
+  ].includes(status?.short);
+}
+
 function getStatusLabel(status) {
-  const short =
-    status?.short || "";
-
-  if (
-    ["1H", "2H", "ET", "P", "LIVE"].includes(
-      short
-    )
-  ) {
-    if (
-      status?.elapsed !== null &&
-      status?.elapsed !== undefined
-    ) {
-      return `${status.elapsed}'`;
-    }
-
-    return "EN DIRECT";
+  if (isLive(status)) {
+    return status?.elapsed != null
+      ? `${status.elapsed}'`
+      : "EN DIRECT";
   }
 
   if (
     ["FT", "AET", "PEN"].includes(
-      short
+      status?.short
     )
   ) {
     return "TERMINÉ";
   }
 
-  if (short === "HT") {
+  if (status?.short === "HT") {
     return "MI-TEMPS";
   }
 
-  return (
-    status?.long ||
-    "À venir"
-  );
-}
-
-function EventIcon({
-  type,
-  detail,
-}) {
-  let icon = "football-outline";
-
-  if (type === "Card") {
-    icon =
-      detail === "Yellow Card"
-        ? "square"
-        : "square";
-  }
-
-  if (type === "subst") {
-    icon =
-      "swap-horizontal";
-  }
-
-  if (type === "Goal") {
-    icon = "football";
-  }
-
-  return (
-    <Ionicons
-      name={icon}
-      size={20}
-      color="#FFFFFF"
-    />
-  );
+  return status?.long || "À venir";
 }
 
 export default function MatchDetailsScreen() {
-  const {
-    id,
-  } = useLocalSearchParams();
+  const { id } =
+    useLocalSearchParams();
 
   const {
     colors,
@@ -155,25 +112,17 @@ export default function MatchDetailsScreen() {
     dark,
   } = useAppTheme();
 
-  const [
-    fixture,
-    setFixture,
-  ] = useState(null);
+  const [fixture, setFixture] =
+    useState(null);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [
-    refreshing,
-    setRefreshing,
-  ] = useState(false);
+  const [refreshing, setRefreshing] =
+    useState(false);
 
-  const [
-    error,
-    setError,
-  ] = useState("");
+  const [error, setError] =
+    useState("");
 
   const loadMatch =
     useCallback(
@@ -225,50 +174,44 @@ export default function MatchDetailsScreen() {
 
   useEffect(() => {
     loadMatch();
+  }, [loadMatch]);
+
+  useEffect(() => {
+    if (
+      !fixture ||
+      !isLive(
+        fixture?.fixture?.status
+      )
+    ) {
+      return undefined;
+    }
 
     const interval =
       setInterval(() => {
-        if (
-          fixture?.fixture?.status?.short &&
-          [
-            "1H",
-            "2H",
-            "ET",
-            "P",
-            "LIVE",
-          ].includes(
-            fixture.fixture.status.short
-          )
-        ) {
-          loadMatch({
-            forceRefresh: true,
-          });
-        }
-      }, 30000);
+        loadMatch({
+          forceRefresh: true,
+        });
+      }, 30 * 1000);
 
-    return () => {
+    return () =>
       clearInterval(interval);
-    };
   }, [
+    fixture,
     loadMatch,
-    fixture?.fixture?.status?.short,
   ]);
 
-  const onRefresh =
-    useCallback(
-      async () => {
-        setRefreshing(true);
+  const refresh =
+    useCallback(async () => {
+      setRefreshing(true);
 
-        try {
-          await loadMatch({
-            forceRefresh: true,
-          });
-        } finally {
-          setRefreshing(false);
-        }
-      },
-      [loadMatch]
-    );
+      try {
+        await loadMatch({
+          forceRefresh: true,
+        });
+      } finally {
+        setRefreshing(false);
+      }
+    }, [loadMatch]);
 
   const home =
     fixture?.teams?.home || {};
@@ -288,68 +231,54 @@ export default function MatchDetailsScreen() {
   const venue =
     fixture?.fixture?.venue || {};
 
-  const referee =
-    fixture?.fixture?.referee;
-
   const events =
-    Array.isArray(
-      fixture?.events
-    )
-      ? fixture.events
-      : [];
+    fixture?.events || [];
 
   const statistics =
-    Array.isArray(
-      fixture?.statistics
-    )
-      ? fixture.statistics
-      : [];
+    fixture?.statistics || [];
 
   const lineups =
-    Array.isArray(
-      fixture?.lineups
-    )
-      ? fixture.lineups
-      : [];
+    fixture?.lineups || [];
 
   const homeStats =
     statistics.find(
       (item) =>
-        item?.team?.id === home?.id
+        item?.team?.id ===
+        home?.id
     );
 
   const awayStats =
     statistics.find(
       (item) =>
-        item?.team?.id === away?.id
+        item?.team?.id ===
+        away?.id
     );
 
   const statRows =
     useMemo(() => {
-      const homeValues =
-        homeStats?.statistics || [];
+      const rows =
+        homeStats?.statistics ||
+        [];
 
-      return homeValues
-        .map((homeItem) => {
-          const awayItem =
+      return rows
+        .map((row) => {
+          const other =
             awayStats?.statistics?.find(
               (item) =>
                 item?.type ===
-                homeItem?.type
+                row?.type
             );
 
           return {
-            type: homeItem?.type,
-            home:
-              homeItem?.value,
-            away:
-              awayItem?.value,
+            type: row?.type,
+            home: row?.value,
+            away: other?.value,
           };
         })
         .filter(
-          (item) =>
-            item.home !== null ||
-            item.away !== null
+          (row) =>
+            row.home != null ||
+            row.away != null
         );
     }, [
       homeStats,
@@ -387,36 +316,15 @@ export default function MatchDetailsScreen() {
 
   if (loading) {
     return (
-      <View
-        style={[
-          styles.center,
-          {
-            backgroundColor:
-              colors.background,
-          },
-        ]}
-      >
-        <ActivityIndicator
-          size="large"
-          color={brand.green}
-        />
-
-        <Text
-          style={[
-            styles.loadingText,
-            {
-              color:
-                colors.textSecondary,
-            },
-          ]}
-        >
-          Chargement du match...
-        </Text>
-      </View>
+      <Centered
+        colors={colors}
+        brand={brand}
+        text="Chargement du match..."
+      />
     );
   }
 
-  if (error || !fixture) {
+  if (!fixture || error) {
     return (
       <View
         style={[
@@ -532,7 +440,7 @@ export default function MatchDetailsScreen() {
         </Text>
 
         <Pressable
-          onPress={onRefresh}
+          onPress={refresh}
           style={[
             styles.back,
             {
@@ -563,7 +471,7 @@ export default function MatchDetailsScreen() {
             refreshing={
               refreshing
             }
-            onRefresh={onRefresh}
+            onRefresh={refresh}
             tintColor={
               brand.green
             }
@@ -572,7 +480,7 @@ export default function MatchDetailsScreen() {
       >
         <Glass
           intensity={
-            dark ? 38 : 60
+            dark ? 35 : 55
           }
           style={[
             styles.scoreCard,
@@ -583,12 +491,12 @@ export default function MatchDetailsScreen() {
           ]}
         >
           <TouchableOpacity
-            activeOpacity={0.7}
+            activeOpacity={0.75}
             onPress={
               openCompetition
             }
             style={
-              styles.leagueButton
+              styles.competition
             }
           >
             {league.logo ? (
@@ -597,7 +505,7 @@ export default function MatchDetailsScreen() {
                   uri: league.logo,
                 }}
                 style={
-                  styles.leagueLogo
+                  styles.competitionLogo
                 }
               />
             ) : (
@@ -613,12 +521,12 @@ export default function MatchDetailsScreen() {
             <Text
               numberOfLines={1}
               style={[
-                styles.leagueName,
+                styles.competitionName,
                 {
                   color:
                     colors.text,
-                  },
-                ]}
+                },
+              ]}
             >
               {league.name ||
                 "Football"}
@@ -643,24 +551,21 @@ export default function MatchDetailsScreen() {
             ]}
           >
             {formatDate(
-              fixture.fixture
-                ?.date
+              fixture.fixture?.date
             )}
           </Text>
 
           <View
-            style={
-              styles.scoreTeams
-            }
+            style={styles.teams}
           >
             <TouchableOpacity
               activeOpacity={0.75}
               onPress={() =>
-                openTeam(
-                  home.id
-                )
+                openTeam(home.id)
               }
-              style={styles.scoreTeam}
+              style={
+                styles.team
+              }
             >
               {home.logo ? (
                 <Image
@@ -670,12 +575,11 @@ export default function MatchDetailsScreen() {
                   style={
                     styles.teamLogo
                   }
-                  resizeMode="contain"
                 />
               ) : (
                 <View
                   style={[
-                    styles.teamLogoFallback,
+                    styles.teamFallback,
                     {
                       backgroundColor:
                         colors.border,
@@ -684,7 +588,7 @@ export default function MatchDetailsScreen() {
                 >
                   <Ionicons
                     name="football-outline"
-                    size={26}
+                    size={25}
                     color={
                       colors.textSecondary
                     }
@@ -708,7 +612,7 @@ export default function MatchDetailsScreen() {
 
             <View
               style={
-                styles.mainScore
+                styles.scoreBox
               }
             >
               <Text
@@ -722,52 +626,36 @@ export default function MatchDetailsScreen() {
               >
                 {goals.home ??
                   "-"}
-                {"  "}
-                :
-                {"  "}
+                {" : "}
                 {goals.away ??
                   "-"}
               </Text>
 
-              <View
+              <Text
                 style={[
-                  styles.statusBadge,
+                  styles.status,
                   {
-                    backgroundColor:
-                      status.short ===
-                      "FT"
-                        ? "rgba(128,128,128,0.12)"
-                        : "rgba(105,169,81,0.14)",
+                    color:
+                      isLive(status)
+                        ? brand.red
+                        : colors.textSecondary,
                   },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.statusBadgeText,
-                    {
-                      color:
-                        status.short ===
-                        "FT"
-                          ? colors.textSecondary
-                          : brand.green,
-                    },
-                  ]}
-                >
-                  {getStatusLabel(
-                    status
-                  )}
-                </Text>
-              </View>
+                {getStatusLabel(
+                  status
+                )}
+              </Text>
             </View>
 
             <TouchableOpacity
               activeOpacity={0.75}
               onPress={() =>
-                openTeam(
-                  away.id
-                )
+                openTeam(away.id)
               }
-              style={styles.scoreTeam}
+              style={
+                styles.team
+              }
             >
               {away.logo ? (
                 <Image
@@ -777,12 +665,11 @@ export default function MatchDetailsScreen() {
                   style={
                     styles.teamLogo
                   }
-                  resizeMode="contain"
                 />
               ) : (
                 <View
                   style={[
-                    styles.teamLogoFallback,
+                    styles.teamFallback,
                     {
                       backgroundColor:
                         colors.border,
@@ -791,7 +678,7 @@ export default function MatchDetailsScreen() {
                 >
                   <Ionicons
                     name="football-outline"
-                    size={26}
+                    size={25}
                     color={
                       colors.textSecondary
                     }
@@ -824,18 +711,22 @@ export default function MatchDetailsScreen() {
             ]}
           >
             {formatTime(
-              fixture.fixture
-                ?.date
+              fixture.fixture?.date
             )}
           </Text>
         </Glass>
+
+        <Section
+          title="Informations"
+          colors={colors}
+        />
 
         <Glass
           intensity={
             dark ? 30 : 50
           }
           style={[
-            styles.infoCard,
+            styles.card,
             {
               borderColor:
                 colors.border,
@@ -846,8 +737,18 @@ export default function MatchDetailsScreen() {
             icon="location-outline"
             label="Stade"
             value={
-              venue?.name ||
+              venue.name ||
               "Non renseigné"
+            }
+            colors={colors}
+          />
+
+          <InfoRow
+            icon="business-outline"
+            label="Ville"
+            value={
+              venue.city ||
+              "Non renseignée"
             }
             colors={colors}
           />
@@ -856,31 +757,22 @@ export default function MatchDetailsScreen() {
             icon="person-outline"
             label="Arbitre"
             value={
-              referee ||
-              "Non renseigné"
-            }
-            colors={colors}
-          />
-
-          <InfoRow
-            icon="flag-outline"
-            label="Pays"
-            value={
-              league?.country ||
+              fixture.fixture
+                ?.referee ||
               "Non renseigné"
             }
             colors={colors}
           />
         </Glass>
 
-        <SectionTitle
+        <Section
           title="Événements"
           colors={colors}
         />
 
         {events.length === 0 ? (
-          <EmptyCard
-            text="Aucun événement disponible pour ce match."
+          <Empty
+            text="Aucun événement disponible."
             colors={colors}
           />
         ) : (
@@ -889,7 +781,7 @@ export default function MatchDetailsScreen() {
               dark ? 30 : 50
             }
             style={[
-              styles.eventsCard,
+              styles.card,
               {
                 borderColor:
                   colors.border,
@@ -899,21 +791,22 @@ export default function MatchDetailsScreen() {
             {events.map(
               (event, index) => (
                 <View
-                  key={`${event.time?.elapsed || 0}-${event.player?.id || index}`}
+                  key={`${index}-${event.player?.id || ""}`}
                   style={
-                    styles.eventRow
+                    styles.event
                   }
                 >
                   <Text
                     style={[
-                      styles.eventTime,
+                      styles.minute,
                       {
                         color:
                           colors.textSecondary,
                       },
                     ]}
                   >
-                    {event.time?.elapsed ??
+                    {event.time
+                      ?.elapsed ??
                       "-"}
                     '
                   </Text>
@@ -927,19 +820,24 @@ export default function MatchDetailsScreen() {
                       },
                     ]}
                   >
-                    <EventIcon
-                      type={
-                        event.type
+                    <Ionicons
+                      name={
+                        event.type ===
+                        "subst"
+                          ? "swap-horizontal"
+                          : event.type ===
+                            "Card"
+                          ? "square"
+                          : "football"
                       }
-                      detail={
-                        event.detail
-                      }
+                      size={16}
+                      color="#FFFFFF"
                     />
                   </View>
 
                   <View
                     style={
-                      styles.eventContent
+                      styles.eventBody
                     }
                   >
                     <Text
@@ -953,7 +851,7 @@ export default function MatchDetailsScreen() {
                     >
                       {event.player
                         ?.name ||
-                        "Événement"}
+                        event.type}
                     </Text>
 
                     <Text
@@ -966,41 +864,26 @@ export default function MatchDetailsScreen() {
                       ]}
                     >
                       {event.detail ||
-                        event.type ||
                         ""}
                       {event.assist?.name
-                        ? ` · Passe : ${event.assist.name}`
+                        ? ` · ${event.assist.name}`
                         : ""}
                     </Text>
                   </View>
-
-                  <Text
-                    style={[
-                      styles.eventTeam,
-                      {
-                        color:
-                          colors.textSecondary,
-                      },
-                    ]}
-                  >
-                    {event.team
-                      ?.name ||
-                      ""}
-                  </Text>
                 </View>
               )
             )}
           </Glass>
         )}
 
-        <SectionTitle
+        <Section
           title="Statistiques"
           colors={colors}
         />
 
         {statRows.length === 0 ? (
-          <EmptyCard
-            text="Les statistiques ne sont pas disponibles pour ce match."
+          <Empty
+            text="Les statistiques ne sont pas disponibles."
             colors={colors}
           />
         ) : (
@@ -1009,7 +892,7 @@ export default function MatchDetailsScreen() {
               dark ? 30 : 50
             }
             style={[
-              styles.statsCard,
+              styles.card,
               {
                 borderColor:
                   colors.border,
@@ -1022,7 +905,6 @@ export default function MatchDetailsScreen() {
               }
             >
               <Text
-                numberOfLines={1}
                 style={[
                   styles.statsTeam,
                   {
@@ -1031,8 +913,7 @@ export default function MatchDetailsScreen() {
                   },
                 ]}
               >
-                {home.name ||
-                  "Domicile"}
+                {home.name}
               </Text>
 
               <Text
@@ -1044,50 +925,80 @@ export default function MatchDetailsScreen() {
                   },
                 ]}
               >
-                {away.name ||
-                  "Extérieur"}
+                {away.name}
               </Text>
             </View>
 
             {statRows.map(
-              (stat) => (
-                <StatRow
-                  key={stat.type}
-                  stat={stat}
-                  colors={colors}
-                  brand={brand}
-                />
+              (row) => (
+                <View
+                  key={row.type}
+                  style={
+                    styles.statRow
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.statValue,
+                      {
+                        color:
+                          colors.text,
+                      },
+                    ]}
+                  >
+                    {row.home ??
+                      "-"}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.statType,
+                      {
+                        color:
+                          colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {row.type}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.statValue,
+                      {
+                        color:
+                          colors.text,
+                      },
+                    ]}
+                  >
+                    {row.away ??
+                      "-"}
+                  </Text>
+                </View>
               )
             )}
           </Glass>
         )}
 
-        <SectionTitle
+        <Section
           title="Compositions"
           colors={colors}
         />
 
         {lineups.length === 0 ? (
-          <EmptyCard
+          <Empty
             text="Les compositions ne sont pas encore disponibles."
             colors={colors}
           />
         ) : (
           lineups.map(
             (lineup) => (
-              <LineupCard
+              <Lineup
                 key={
                   lineup.team?.id
                 }
-                lineup={
-                  lineup
-                }
-                colors={
-                  colors
-                }
-                brand={
-                  brand
-                }
+                lineup={lineup}
+                colors={colors}
               />
             )
           )
@@ -1097,55 +1008,42 @@ export default function MatchDetailsScreen() {
   );
 }
 
-function InfoRow({
-  icon,
-  label,
-  value,
+function Centered({
   colors,
+  brand,
+  text,
 }) {
   return (
     <View
-      style={styles.infoRow}
+      style={[
+        styles.center,
+        {
+          backgroundColor:
+            colors.background,
+        },
+      ]}
     >
-      <Ionicons
-        name={icon}
-        size={19}
-        color={colors.textSecondary}
+      <ActivityIndicator
+        size="large"
+        color={brand.green}
       />
 
-      <View
-        style={styles.infoText}
+      <Text
+        style={[
+          styles.loading,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
       >
-        <Text
-          style={[
-            styles.infoLabel,
-            {
-              color:
-                colors.textSecondary,
-            },
-          ]}
-        >
-          {label}
-        </Text>
-
-        <Text
-          numberOfLines={2}
-          style={[
-            styles.infoValue,
-            {
-              color:
-                colors.text,
-            },
-          ]}
-        >
-          {value}
-        </Text>
-      </View>
+        {text}
+      </Text>
     </View>
   );
 }
 
-function SectionTitle({
+function Section({
   title,
   colors,
 }) {
@@ -1163,14 +1061,14 @@ function SectionTitle({
   );
 }
 
-function EmptyCard({
+function Empty({
   text,
   colors,
 }) {
   return (
     <View
       style={[
-        styles.emptyCard,
+        styles.empty,
         {
           backgroundColor:
             colors.surface,
@@ -1202,77 +1100,67 @@ function EmptyCard({
   );
 }
 
-function StatRow({
-  stat,
+function InfoRow({
+  icon,
+  label,
+  value,
   colors,
-  brand,
 }) {
   return (
     <View
-      style={styles.statRow}
+      style={styles.infoRow}
     >
-      <Text
-        style={[
-          styles.statValue,
-          {
-            color:
-              colors.text,
-          },
-        ]}
-      >
-        {stat.home ?? "-"}
-      </Text>
+      <Ionicons
+        name={icon}
+        size={19}
+        color={
+          colors.textSecondary
+        }
+      />
 
       <View
-        style={
-          styles.statCenter
-        }
+        style={styles.infoBody}
       >
         <Text
           style={[
-            styles.statLabel,
+            styles.infoLabel,
             {
               color:
                 colors.textSecondary,
             },
           ]}
         >
-          {stat.type}
+          {label}
+        </Text>
+
+        <Text
+          style={[
+            styles.infoValue,
+            {
+              color:
+                colors.text,
+            },
+          ]}
+        >
+          {value}
         </Text>
       </View>
-
-      <Text
-        style={[
-          styles.statValue,
-          {
-            color:
-              colors.text,
-          },
-        ]}
-      >
-        {stat.away ?? "-"}
-      </Text>
     </View>
   );
 }
 
-function LineupCard({
+function Lineup({
   lineup,
   colors,
-  brand,
 }) {
   const players =
-    Array.isArray(
-      lineup?.startXI
-    )
-      ? lineup.startXI
-      : [];
+    lineup?.startXI || [];
 
   return (
     <Glass
       intensity={30}
       style={[
-        styles.lineupCard,
+        styles.card,
         {
           borderColor:
             colors.border,
@@ -1284,7 +1172,7 @@ function LineupCard({
           styles.lineupHeader
         }
       >
-        {lineup.team?.logo ? (
+        {lineup.team?.logo && (
           <Image
             source={{
               uri:
@@ -1294,11 +1182,11 @@ function LineupCard({
               styles.lineupLogo
             }
           />
-        ) : null}
+        )}
 
         <Text
           style={[
-            styles.lineupTeam,
+            styles.lineupName,
             {
               color:
                 colors.text,
@@ -1314,7 +1202,7 @@ function LineupCard({
             styles.formation,
             {
               color:
-                brand.green,
+                colors.textSecondary,
             },
           ]}
         >
@@ -1326,8 +1214,7 @@ function LineupCard({
       {players.map(
         (item, index) => {
           const player =
-            item?.player ||
-            {};
+            item?.player || {};
 
           return (
             <TouchableOpacity
@@ -1337,9 +1224,7 @@ function LineupCard({
               }
               activeOpacity={0.75}
               onPress={() => {
-                if (
-                  !player.id
-                ) {
+                if (!player.id) {
                   return;
                 }
 
@@ -1354,12 +1239,12 @@ function LineupCard({
                 });
               }}
               style={
-                styles.playerRow
+                styles.player
               }
             >
               <Text
                 style={[
-                  styles.playerNumber,
+                  styles.number,
                   {
                     color:
                       colors.textSecondary,
@@ -1410,7 +1295,7 @@ const styles = StyleSheet.create({
     padding: 30,
   },
 
-  loadingText: {
+  loading: {
     marginTop: 12,
     fontSize: 14,
     fontWeight: "700",
@@ -1464,7 +1349,7 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 18,
-    paddingBottom: 60,
+    paddingBottom: 70,
   },
 
   scoreCard: {
@@ -1474,39 +1359,40 @@ const styles = StyleSheet.create({
       StyleSheet.hairlineWidth,
   },
 
-  leagueButton: {
+  competition: {
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "center",
   },
 
-  leagueLogo: {
+  competitionLogo: {
     width: 22,
     height: 22,
     marginRight: 7,
   },
 
-  leagueName: {
+  competitionName: {
+    maxWidth: 240,
     fontSize: 14,
     fontWeight: "800",
-    maxWidth: 250,
+    marginHorizontal: 6,
   },
 
   date: {
     textAlign: "center",
-    marginTop: 8,
+    marginTop: 9,
     fontSize: 12,
     textTransform:
       "capitalize",
   },
 
-  scoreTeams: {
+  teams: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 24,
+    marginTop: 25,
   },
 
-  scoreTeam: {
+  team: {
     flex: 1,
     alignItems: "center",
   },
@@ -1517,7 +1403,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  teamLogoFallback: {
+  teamFallback: {
     width: 68,
     height: 68,
     borderRadius: 34,
@@ -1532,38 +1418,39 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  mainScore: {
-    width: 105,
+  scoreBox: {
+    width: 100,
     alignItems: "center",
   },
 
   score: {
-    fontSize: 29,
+    fontSize: 28,
     fontWeight: "900",
   },
 
-  statusBadge: {
-    marginTop: 9,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-
-  statusBadgeText: {
-    fontSize: 10,
+  status: {
+    marginTop: 8,
+    fontSize: 11,
     fontWeight: "900",
+    textAlign: "center",
   },
 
   kickoff: {
-    textAlign: "center",
     marginTop: 14,
+    textAlign: "center",
     fontSize: 13,
     fontWeight: "800",
   },
 
-  infoCard: {
-    marginTop: 14,
-    padding: 18,
+  sectionTitle: {
+    marginTop: 24,
+    marginBottom: 10,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+
+  card: {
+    padding: 17,
     borderRadius: 24,
     borderWidth:
       StyleSheet.hairlineWidth,
@@ -1575,7 +1462,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
 
-  infoText: {
+  infoBody: {
     flex: 1,
     marginLeft: 12,
   },
@@ -1591,27 +1478,27 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  sectionTitle: {
-    marginTop: 24,
-    marginBottom: 10,
-    fontSize: 20,
-    fontWeight: "900",
+  empty: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 20,
+    alignItems: "center",
   },
 
-  eventsCard: {
-    padding: 16,
-    borderRadius: 24,
-    borderWidth:
-      StyleSheet.hairlineWidth,
+  emptyText: {
+    textAlign: "center",
+    marginTop: 8,
+    lineHeight: 20,
+    fontSize: 13,
   },
 
-  eventRow: {
-    minHeight: 58,
+  event: {
+    minHeight: 55,
     flexDirection: "row",
     alignItems: "center",
   },
 
-  eventTime: {
+  minute: {
     width: 35,
     fontSize: 11,
     fontWeight: "800",
@@ -1626,7 +1513,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
 
-  eventContent: {
+  eventBody: {
     flex: 1,
   },
 
@@ -1640,19 +1527,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
-  eventTeam: {
-    maxWidth: 75,
-    fontSize: 9,
-    textAlign: "right",
-  },
-
-  statsCard: {
-    padding: 16,
-    borderRadius: 24,
-    borderWidth:
-      StyleSheet.hairlineWidth,
-  },
-
   statsHeader: {
     flexDirection: "row",
     justifyContent:
@@ -1661,15 +1535,15 @@ const styles = StyleSheet.create({
   },
 
   statsTeam: {
-    width: "42%",
+    width: "45%",
     fontSize: 11,
     fontWeight: "900",
   },
 
   statRow: {
+    minHeight: 42,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
     borderTopWidth:
       StyleSheet.hairlineWidth,
     borderTopColor:
@@ -1678,28 +1552,16 @@ const styles = StyleSheet.create({
 
   statValue: {
     width: "25%",
+    textAlign: "center",
     fontSize: 13,
     fontWeight: "900",
-    textAlign: "center",
   },
 
-  statCenter: {
+  statType: {
     flex: 1,
-    alignItems: "center",
-  },
-
-  statLabel: {
+    textAlign: "center",
     fontSize: 10,
     fontWeight: "700",
-    textAlign: "center",
-  },
-
-  lineupCard: {
-    padding: 16,
-    borderRadius: 24,
-    borderWidth:
-      StyleSheet.hairlineWidth,
-    marginBottom: 10,
   },
 
   lineupHeader: {
@@ -1714,7 +1576,7 @@ const styles = StyleSheet.create({
     marginRight: 9,
   },
 
-  lineupTeam: {
+  lineupName: {
     flex: 1,
     fontSize: 15,
     fontWeight: "900",
@@ -1722,10 +1584,10 @@ const styles = StyleSheet.create({
 
   formation: {
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "800",
   },
 
-  playerRow: {
+  player: {
     minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
@@ -1735,29 +1597,14 @@ const styles = StyleSheet.create({
       "rgba(128,128,128,0.18)",
   },
 
-  playerNumber: {
+  number: {
     width: 28,
     fontSize: 11,
-    fontWeight: "700",
   },
 
   playerName: {
     flex: 1,
     fontSize: 12,
     fontWeight: "700",
-  },
-
-  emptyCard: {
-    borderWidth: 1,
-    borderRadius: 22,
-    padding: 20,
-    alignItems: "center",
-  },
-
-  emptyText: {
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 20,
-    fontSize: 13,
   },
 });
