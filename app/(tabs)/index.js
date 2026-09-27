@@ -16,14 +16,40 @@ import {
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 
 import MatchCard from "../../components/matches/MatchCard";
 import { footballApi } from "../../services/football";
 import { useAppTheme } from "../../theme/useAppTheme";
 import { getTranslations } from "../../locales/i18n";
 
-function formatDate(date) {
+const SKY_BLUE = "#63BFE8";
+
+const MONTHS = [
+  "JAN.",
+  "FÉV.",
+  "MAR.",
+  "AVR.",
+  "MAI",
+  "JUIN",
+  "JUIL.",
+  "AOÛT",
+  "SEPT.",
+  "OCT.",
+  "NOV.",
+  "DÉC.",
+];
+
+const WEEKDAYS = [
+  "DIM.",
+  "LUN.",
+  "MAR.",
+  "MER.",
+  "JEU.",
+  "VEN.",
+  "SAM.",
+];
+
+function formatApiDate(date) {
   const year = date.getFullYear();
 
   const month = String(
@@ -35,6 +61,20 @@ function formatDate(date) {
   ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function getDateKey(date) {
+  return formatApiDate(date);
+}
+
+function addDays(date, amount) {
+  const result = new Date(date);
+
+  result.setDate(
+    result.getDate() + amount
+  );
+
+  return result;
 }
 
 function normalizeFixture(item) {
@@ -89,8 +129,7 @@ function normalizeFixture(item) {
       goals?.halftime?.away ?? null,
 
     competition:
-      league?.name ||
-      "Football",
+      league?.name || "Football",
 
     leagueId:
       league?.id || null,
@@ -157,12 +196,57 @@ function isFinished(match) {
   ].includes(match.shortStatus);
 }
 
+function formatDateLabel(date) {
+  return `${WEEKDAYS[date.getDay()]} ${String(
+    date.getDate()
+  ).padStart(2, "0")} ${MONTHS[date.getMonth()]}`;
+}
+
+function createDateItems() {
+  const today = new Date();
+
+  const start = addDays(today, -7);
+  const end = addDays(today, 7);
+
+  const result = [];
+
+  for (
+    let date = start;
+    date <= end;
+    date = addDays(date, 1)
+  ) {
+    const key = getDateKey(date);
+
+    result.push({
+      key,
+      date: new Date(date),
+      label: formatDateLabel(date),
+      day: date.getDate(),
+    });
+  }
+
+  return result;
+}
+
 export default function HomeScreen() {
   const { colors, brand } =
     useAppTheme();
 
   const { t } =
     getTranslations();
+
+  const dates = useMemo(
+    () => createDateItems(),
+    []
+  );
+
+  const todayKey = useMemo(
+    () => getDateKey(new Date()),
+    []
+  );
+
+  const [selectedDate, setSelectedDate] =
+    useState(todayKey);
 
   const [matches, setMatches] =
     useState([]);
@@ -179,112 +263,133 @@ export default function HomeScreen() {
   const [error, setError] =
     useState("");
 
-  const [lastUpdate, setLastUpdate] =
-    useState(null);
+  const selectedDateObject =
+    useMemo(
+      () =>
+        dates.find(
+          (item) =>
+            item.key === selectedDate
+        )?.date ||
+        new Date(),
+      [dates, selectedDate]
+    );
 
-  const loadToday = useCallback(
-    async ({
-      forceRefresh = false,
-    } = {}) => {
-      try {
-        setError("");
+  const isToday =
+    selectedDate === todayKey;
 
-        const response =
-          await footballApi.today(
-            {},
-            {
-              forceRefresh,
-            }
+  const loadMatchesForDate =
+    useCallback(
+      async ({
+        forceRefresh = false,
+      } = {}) => {
+        try {
+          setError("");
+
+          const response =
+            await footballApi.fixtures(
+              {
+                date: selectedDate,
+              },
+              {
+                forceRefresh,
+              }
+            );
+
+          const list =
+            Array.isArray(
+              response?.response
+            )
+              ? response.response
+              : [];
+
+          setMatches(
+            list.map(normalizeFixture)
           );
+        } catch (err) {
+          setMatches([]);
 
-        const list =
-          Array.isArray(
-            response?.response
-          )
-            ? response.response
-            : [];
-
-        setMatches(
-          list.map(normalizeFixture)
-        );
-
-        setLastUpdate(
-          new Date()
-        );
-      } catch (err) {
-        setError(
-          err?.message ||
-            "Impossible de charger les matchs."
-        );
-      }
-    },
-    []
-  );
-
-  const loadLive = useCallback(
-    async ({
-      forceRefresh = false,
-    } = {}) => {
-      try {
-        const response =
-          await footballApi.live(
-            {},
-            {
-              forceRefresh,
-            }
+          setError(
+            err?.message ||
+              "Impossible de charger les matchs."
           );
+        }
+      },
+      [selectedDate]
+    );
 
-        const list =
-          Array.isArray(
-            response?.response
-          )
-            ? response.response
-            : [];
+  const loadLive =
+    useCallback(
+      async ({
+        forceRefresh = false,
+      } = {}) => {
+        if (!isToday) {
+          setLiveMatches([]);
+          return;
+        }
 
-        setLiveMatches(
-          list
-            .map(normalizeFixture)
-            .filter(isLiveMatch)
-        );
+        try {
+          const response =
+            await footballApi.live(
+              {},
+              {
+                forceRefresh,
+              }
+            );
 
-        setLastUpdate(
-          new Date()
-        );
-      } catch (err) {
-        console.log(
-          "GeSoccer Live:",
-          err?.message
-        );
-      }
-    },
-    []
-  );
+          const list =
+            Array.isArray(
+              response?.response
+            )
+              ? response.response
+              : [];
 
-  const loadAll = useCallback(
-    async ({
-      forceRefresh = false,
-    } = {}) => {
-      setLoading(true);
+          setLiveMatches(
+            list
+              .map(normalizeFixture)
+              .filter(isLiveMatch)
+          );
+        } catch {
+          setLiveMatches([]);
+        }
+      },
+      [isToday]
+    );
 
-      try {
-        await Promise.all([
-          loadToday({
-            forceRefresh,
-          }),
-          loadLive({
-            forceRefresh,
-          }),
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [loadToday, loadLive]
-  );
+  const loadAll =
+    useCallback(
+      async ({
+        forceRefresh = false,
+      } = {}) => {
+        setLoading(true);
+
+        try {
+          await Promise.all([
+            loadMatchesForDate({
+              forceRefresh,
+            }),
+
+            loadLive({
+              forceRefresh,
+            }),
+          ]);
+        } finally {
+          setLoading(false);
+        }
+      },
+      [
+        loadMatchesForDate,
+        loadLive,
+      ]
+    );
 
   useEffect(() => {
     loadAll();
+  }, [
+    selectedDate,
+    loadAll,
+  ]);
 
+  useEffect(() => {
     const interval =
       setInterval(() => {
         loadLive({
@@ -294,7 +399,7 @@ export default function HomeScreen() {
 
     return () =>
       clearInterval(interval);
-  }, [loadAll, loadLive]);
+  }, [loadLive]);
 
   const onRefresh =
     useCallback(async () => {
@@ -309,32 +414,42 @@ export default function HomeScreen() {
       }
     }, [loadAll]);
 
-  const todayDate = useMemo(
-    () => formatDate(new Date()),
-    []
-  );
-
-  const sortedMatches =
-    useMemo(() => {
-      return [...matches].sort(
-        (a, b) =>
-          new Date(a.date || 0).getTime() -
-          new Date(b.date || 0).getTime()
-      );
-    }, [matches]);
-
   const displayedMatches =
-    sortedMatches.filter(
-      (match) =>
-        !liveMatches.some(
-          (live) =>
-            live.id === match.id
-        )
-    );
+    useMemo(() => {
+      const sorted = [
+        ...matches,
+      ].sort(
+        (a, b) =>
+          new Date(
+            a.date || 0
+          ).getTime() -
+          new Date(
+            b.date || 0
+          ).getTime()
+      );
+
+      return sorted.filter(
+        (match) =>
+          !liveMatches.some(
+            (live) =>
+              live.id === match.id
+          )
+      );
+    }, [
+      matches,
+      liveMatches,
+    ]);
 
   const hasData =
     liveMatches.length > 0 ||
     displayedMatches.length > 0;
+
+  const selectedLabel =
+    isToday
+      ? "AUJOURD'HUI"
+      : formatDateLabel(
+          selectedDateObject
+        );
 
   return (
     <View
@@ -357,110 +472,210 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={brand.green}
+            tintColor={
+              SKY_BLUE
+            }
           />
         }
       >
         <View
           style={[
-            styles.hero,
+            styles.topBlock,
             {
               backgroundColor:
-                brand.green,
+                SKY_BLUE,
             },
           ]}
         >
           <View
-            style={styles.heroTop}
+            style={styles.topActions}
           >
-            <View>
-              <Text
-                style={
-                  styles.heroSmall
-                }
-              >
-                {t.homeToday ||
-                  "AUJOURD'HUI"}
-              </Text>
+            <Text
+              style={styles.appTitle}
+            >
+              GeSoccer
+            </Text>
 
-              <Text
-                style={
-                  styles.heroTitle
-                }
-              >
-                {t.matches ||
-                  "Matchs du jour"}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() =>
-                router.push(
-                  "/calendar"
-                )
-              }
+            <View
               style={
-                styles.calendarButton
+                styles.topRight
               }
             >
               <Ionicons
                 name="calendar-outline"
-                size={21}
+                size={20}
                 color="#FFFFFF"
               />
-            </TouchableOpacity>
+
+              <Ionicons
+                name="search-outline"
+                size={20}
+                color="#FFFFFF"
+              />
+            </View>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={
+              false
+            }
+            contentContainerStyle={
+              styles.dateScroller
+            }
+          >
+            {dates.map((item) => {
+              const selected =
+                item.key ===
+                selectedDate;
+
+              const itemIsToday =
+                item.key ===
+                todayKey;
+
+              const itemIsYesterday =
+                item.key ===
+                getDateKey(
+                  addDays(
+                    new Date(),
+                    -1
+                  )
+                );
+
+              const itemIsTomorrow =
+                item.key ===
+                getDateKey(
+                  addDays(
+                    new Date(),
+                    1
+                  )
+                );
+
+              let specialLabel = "";
+
+              if (itemIsToday) {
+                specialLabel =
+                  "AUJOURD'HUI";
+              } else if (
+                itemIsYesterday
+              ) {
+                specialLabel =
+                  "HIER";
+              } else if (
+                itemIsTomorrow
+              ) {
+                specialLabel =
+                  "DEMAIN";
+              }
+
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    setSelectedDate(
+                      item.key
+                    )
+                  }
+                  style={[
+                    styles.dateItem,
+                    selected &&
+                      styles.dateItemSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.dateText,
+                      selected &&
+                        styles.dateTextSelected,
+                    ]}
+                  >
+                    {specialLabel ||
+                      item.label}
+                  </Text>
+
+                  {selected && (
+                    <View
+                      style={
+                        styles.dateIndicator
+                      }
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        <View
+          style={styles.matchesHeader}
+        >
+          <View>
+            <Text
+              style={[
+                styles.matchesSmall,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
+              {selectedLabel}
+            </Text>
+
+            <Text
+              style={[
+                styles.matchesTitle,
+                {
+                  color:
+                    colors.text,
+                },
+              ]}
+            >
+              {t.matches ||
+                "Matchs"}
+            </Text>
           </View>
 
           <Text
-            style={styles.heroDate}
+            style={[
+              styles.counter,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
           >
-            {todayDate}
+            {displayedMatches.length +
+              liveMatches.length}
           </Text>
         </View>
 
-        {liveMatches.length > 0 && (
+        {liveMatches.length >
+          0 && (
           <View
             style={styles.section}
           >
             <View
               style={
-                styles.sectionHeader
+                styles.sectionTitleRow
               }
             >
               <View
-                style={
-                  styles.sectionTitleRow
-                }
-              >
-                <View
-                  style={styles.liveDot}
-                />
-
-                <Text
-                  style={[
-                    styles.sectionTitle,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {t.live ||
-                    "En direct"}
-                </Text>
-              </View>
+                style={styles.liveDot}
+              />
 
               <Text
                 style={[
-                  styles.counter,
+                  styles.sectionTitle,
                   {
                     color:
-                      colors.textSecondary,
+                      colors.text,
                   },
                 ]}
               >
-                {liveMatches.length}
+                {t.live ||
+                  "En direct"}
               </Text>
             </View>
 
@@ -470,7 +685,8 @@ export default function HomeScreen() {
                   key={`live-${match.id}`}
                   match={{
                     ...match,
-                    status: "live",
+                    status:
+                      "live",
                   }}
                 />
               )
@@ -481,61 +697,32 @@ export default function HomeScreen() {
         <View
           style={styles.section}
         >
-          <View
-            style={
-              styles.sectionHeader
-            }
-          >
-            <Text
-              style={[
-                styles.sectionTitle,
-                {
-                  color:
-                    colors.text,
-                },
-              ]}
-            >
-              {t.matches ||
-                "Matchs"}
-            </Text>
-
-            <Text
-              style={[
-                styles.counter,
-                {
-                  color:
-                    colors.textSecondary,
-                },
-              ]}
-            >
-              {displayedMatches.length}
-            </Text>
-          </View>
-
-          {loading && !hasData && (
-            <View
-              style={styles.center}
-            >
-              <ActivityIndicator
-                size="large"
-                color={
-                  brand.green
-                }
-              />
-
-              <Text
-                style={[
-                  styles.loadingText,
-                  {
-                    color:
-                      colors.textSecondary,
-                  },
-                ]}
+          {loading &&
+            !hasData && (
+              <View
+                style={styles.center}
               >
-                Chargement des matchs...
-              </Text>
-            </View>
-          )}
+                <ActivityIndicator
+                  size="large"
+                  color={
+                    SKY_BLUE
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.loadingText,
+                    {
+                      color:
+                        colors.textSecondary,
+                    },
+                  ]}
+                >
+                  Chargement des
+                  matchs...
+                </Text>
+              </View>
+            )}
 
           {!loading &&
             error &&
@@ -568,7 +755,8 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  Impossible de charger
+                  Impossible de
+                  charger
                 </Text>
 
                 <Text
@@ -595,7 +783,7 @@ export default function HomeScreen() {
                     styles.retryButton,
                     {
                       backgroundColor:
-                        brand.green,
+                        SKY_BLUE,
                     },
                   ]}
                 >
@@ -613,6 +801,8 @@ export default function HomeScreen() {
           {!loading &&
             !error &&
             displayedMatches.length ===
+              0 &&
+            liveMatches.length ===
               0 && (
               <View
                 style={[
@@ -654,8 +844,9 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  Aucun match disponible
-                  pour aujourd'hui.
+                  Aucun match
+                  disponible pour
+                  cette date.
                 </Text>
               </View>
             )}
@@ -675,27 +866,6 @@ export default function HomeScreen() {
             )
           )}
         </View>
-
-        {lastUpdate && (
-          <Text
-            style={[
-              styles.lastUpdate,
-              {
-                color:
-                  colors.textSecondary,
-              },
-            ]}
-          >
-            Mis à jour à{" "}
-            {lastUpdate.toLocaleTimeString(
-              [],
-              {
-                hour: "2-digit",
-                minute: "2-digit",
-              }
-            )}
-          </Text>
-        )}
       </ScrollView>
     </View>
   );
@@ -710,74 +880,94 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
 
-  hero: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 20,
-    padding: 20,
-    borderRadius: 26,
+  topBlock: {
+    paddingTop: 8,
+    paddingBottom: 0,
   },
 
-  heroTop: {
+  topActions: {
+    minHeight: 74,
+    paddingHorizontal: 18,
     flexDirection: "row",
+    alignItems: "center",
     justifyContent:
       "space-between",
-    alignItems: "center",
   },
 
-  heroSmall: {
-    color:
-      "rgba(255,255,255,0.72)",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-
-  heroTitle: {
+  appTitle: {
     color: "#FFFFFF",
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: "900",
-    marginTop: 4,
   },
 
-  heroDate: {
-    color:
-      "rgba(255,255,255,0.82)",
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 12,
-  },
-
-  calendarButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    backgroundColor:
-      "rgba(255,255,255,0.18)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  section: {
-    marginHorizontal: 16,
-    marginBottom: 22,
-  },
-
-  sectionHeader: {
+  topRight: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 18,
+  },
+
+  dateScroller: {
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+  },
+
+  dateItem: {
+    minWidth: 76,
+    height: 42,
+    marginHorizontal: 3,
+    paddingHorizontal: 8,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent:
-      "space-between",
-    marginBottom: 10,
+      "center",
   },
 
-  sectionTitleRow: {
+  dateItemSelected: {
+    backgroundColor:
+      "rgba(255,255,255,0.22)",
+  },
+
+  dateText: {
+    color:
+      "rgba(255,255,255,0.78)",
+    fontSize: 11,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+
+  dateTextSelected: {
+    color: "#FFFFFF",
+  },
+
+  dateIndicator: {
+    position: "absolute",
+    bottom: 4,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor:
+      "#FFFFFF",
+  },
+
+  matchesHeader: {
+    marginHorizontal: 16,
+    marginTop: 18,
+    marginBottom: 12,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
+    justifyContent:
+      "space-between",
   },
 
-  sectionTitle: {
-    fontSize: 20,
+  matchesSmall: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+  },
+
+  matchesTitle: {
+    marginTop: 2,
+    fontSize: 24,
     fontWeight: "900",
   },
 
@@ -786,18 +976,36 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  section: {
+    marginHorizontal: 16,
+    marginBottom: 22,
+  },
+
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  sectionTitle: {
+    fontSize: 19,
+    fontWeight: "900",
+  },
+
   liveDot: {
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: "#E74747",
+    backgroundColor:
+      "#E74747",
     marginRight: 8,
   },
 
   center: {
     minHeight: 180,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent:
+      "center",
   },
 
   loadingText: {
@@ -854,11 +1062,5 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: "center",
     lineHeight: 20,
-  },
-
-  lastUpdate: {
-    textAlign: "center",
-    fontSize: 11,
-    marginBottom: 10,
   },
 });
