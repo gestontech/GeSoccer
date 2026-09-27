@@ -90,16 +90,14 @@ function Team({
         >
           <Ionicons
             name="football-outline"
-            size={18}
-            color={
-              colors.textSecondary
-            }
+            size={14}
+            color={colors.textSecondary}
           />
         </View>
       )}
 
       <Text
-        numberOfLines={2}
+        numberOfLines={1}
         style={[
           styles.teamName,
           {
@@ -171,19 +169,16 @@ export default function MatchCard({
     }
 
     router.push({
-      pathname:
-        "/competition/[id]",
+      pathname: "/competition/[id]",
       params: {
-        id: String(
-          match.leagueId
-        ),
+        id: String(match.leagueId),
       },
     });
   }
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={0.88}
       onPress={openMatch}
       style={styles.wrapper}
     >
@@ -198,31 +193,26 @@ export default function MatchCard({
           },
         ]}
       >
+        {/* COMPÉTITION + STATUT */}
         <View style={styles.top}>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={
-              openCompetition
-            }
+            onPress={openCompetition}
             style={styles.competition}
           >
             {match.competitionLogo ? (
               <Image
                 source={{
-                  uri:
-                    match.competitionLogo,
+                  uri: match.competitionLogo,
                 }}
-                style={
-                  styles.competitionLogo
-                }
+                style={styles.competitionLogo}
+                resizeMode="contain"
               />
             ) : (
               <Ionicons
                 name="trophy-outline"
-                size={15}
-                color={
-                  colors.textSecondary
-                }
+                size={13}
+                color={colors.textSecondary}
               />
             )}
 
@@ -253,9 +243,7 @@ export default function MatchCard({
           >
             {live && (
               <View
-                style={
-                  styles.statusDot
-                }
+                style={styles.statusDot}
               />
             )}
 
@@ -274,6 +262,7 @@ export default function MatchCard({
           </View>
         </View>
 
+        {/* ÉQUIPES */}
         <View style={styles.teams}>
           <Team
             name={match.homeTeam}
@@ -281,15 +270,11 @@ export default function MatchCard({
             score={match.homeScore}
             colors={colors}
             onPress={() =>
-              openTeam(
-                match.homeTeamId
-              )
+              openTeam(match.homeTeamId)
             }
           />
 
-          <View
-            style={styles.middle}
-          >
+          <View style={styles.middle}>
             <Text
               style={[
                 styles.vs,
@@ -301,21 +286,6 @@ export default function MatchCard({
             >
               VS
             </Text>
-
-            {match.venue && (
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.venue,
-                  {
-                    color:
-                      colors.textSecondary,
-                  },
-                ]}
-              >
-                {match.venue}
-              </Text>
-            )}
           </View>
 
           <Team
@@ -324,13 +294,12 @@ export default function MatchCard({
             score={match.awayScore}
             colors={colors}
             onPress={() =>
-              openTeam(
-                match.awayTeamId
-              )
+              openTeam(match.awayTeamId)
             }
           />
         </View>
 
+        {/* BAS DE CARTE */}
         <View
           style={[
             styles.bottom,
@@ -350,31 +319,16 @@ export default function MatchCard({
               },
             ]}
           >
-            {match.country ||
-              "Football"}
+            {match.country || "Football"}
           </Text>
 
-          <View
-            style={styles.details}
-          >
-            <Text
-              style={[
-                styles.detailsText,
-                {
-                  color:
-                    brand.green,
-                },
-              ]}
-            >
-              Détails
-            </Text>
-
-            <Ionicons
-              name="chevron-forward"
-              size={17}
-              color={brand.green}
-            />
-          </View>
+          {/* Aucun texte "Détails" :
+              la carte entière reste cliquable */}
+          <Ionicons
+            name="chevron-forward"
+            size={14}
+            color={brand.green}
+          />
         </View>
       </Glass>
     </TouchableOpacity>
@@ -383,67 +337,68 @@ export default function MatchCard({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 10,
+    marginBottom: 6,
   },
 
   card: {
-    borderRadius: 22,
+    borderRadius: 15,
     overflow: "hidden",
     borderWidth: 1,
-    padding: 15,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
   },
 
   top: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
+    minHeight: 20,
   },
 
   competition: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 10,
+    marginRight: 6,
   },
 
   competitionLogo: {
-    width: 18,
-    height: 18,
-    marginRight: 7,
+    width: 14,
+    height: 14,
+    marginRight: 4,
   },
 
   competitionText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: "700",
   },
 
   status: {
-    minHeight: 26,
-    paddingHorizontal: 9,
-    borderRadius: 10,
+    minHeight: 19,
+    paddingHorizontal: 6,
+    borderRadius: 7,
     flexDirection: "row",
     alignItems: "center",
   },
 
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: "#E74747",
-    marginRight: 5,
+    marginRight: 3,
   },
 
   statusText: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: "900",
   },
 
   teams: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 18,
+    marginTop: 7,
   },
 
   team: {
@@ -452,76 +407,56 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: 42,
-    height: 42,
-    marginBottom: 7,
+    width: 27,
+    height: 27,
+    marginBottom: 3,
   },
 
   logoFallback: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 27,
+    height: 27,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 7,
+    marginBottom: 3,
   },
 
   teamName: {
     width: "100%",
-    minHeight: 34,
     textAlign: "center",
-    fontSize: 13,
+    fontSize: 9,
     fontWeight: "800",
   },
 
   score: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: "900",
-    marginTop: 5,
+    marginTop: 1,
   },
 
   middle: {
-    width: 58,
+    width: 34,
     alignItems: "center",
     justifyContent: "center",
   },
 
   vs: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: "900",
   },
 
-  venue: {
-    width: 58,
-    fontSize: 8,
-    textAlign: "center",
-    marginTop: 5,
-  },
-
   bottom: {
-    marginTop: 14,
-    paddingTop: 10,
+    marginTop: 6,
+    paddingTop: 5,
     borderTopWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
   },
 
   country: {
     flex: 1,
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: "600",
-  },
-
-  details: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  detailsText: {
-    fontSize: 11,
-    fontWeight: "800",
-    marginRight: 2,
   },
 });
