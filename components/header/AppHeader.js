@@ -26,6 +26,7 @@ export default function AppHeader() {
         },
       ]}
     >
+      {/* Menu */}
       <TouchableOpacity
         style={styles.button}
         activeOpacity={0.75}
@@ -38,7 +39,9 @@ export default function AppHeader() {
         </View>
       </TouchableOpacity>
 
+      {/* Actions droite */}
       <View style={styles.rightActions}>
+        {/* Calendrier */}
         <TouchableOpacity
           style={styles.button}
           activeOpacity={0.75}
@@ -46,11 +49,12 @@ export default function AppHeader() {
         >
           <Ionicons
             name="calendar-outline"
-            size={25}
+            size={20}
             color="#FFFFFF"
           />
         </TouchableOpacity>
 
+        {/* Recherche */}
         <TouchableOpacity
           style={styles.button}
           activeOpacity={0.75}
@@ -58,7 +62,7 @@ export default function AppHeader() {
         >
           <Ionicons
             name="search-outline"
-            size={25}
+            size={20}
             color="#FFFFFF"
           />
         </TouchableOpacity>
@@ -91,14 +95,15 @@ const styles = StyleSheet.create({
   },
 
   menu: {
-    gap: 5,
+    width: 20,
+    gap: 4,
     alignItems: "center",
     justifyContent: "center",
   },
 
   line: {
-    width: 26,
-    height: 3,
+    width: 20,
+    height: 2.5,
     borderRadius: 3,
     backgroundColor: "#FFFFFF",
   },
