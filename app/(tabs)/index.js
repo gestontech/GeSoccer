@@ -47,7 +47,7 @@ function normalizeFixture(item) {
   return {
     id: String(
       fixture.id ||
-        `${teams?.home?.name || "home"}-${teams?.away?.name || "away"}`
+        `${teams?.home?.id || "home"}-${teams?.away?.id || "away"}`
     ),
 
     homeTeam:
@@ -58,13 +58,23 @@ function normalizeFixture(item) {
       teams?.away?.name ||
       "Équipe extérieure",
 
+    homeTeamId:
+      teams?.home?.id || null,
+
+    awayTeamId:
+      teams?.away?.id || null,
+
+    homeWinner:
+      teams?.home?.winner ?? null,
+
+    awayWinner:
+      teams?.away?.winner ?? null,
+
     homeLogo:
-      teams?.home?.logo ||
-      null,
+      teams?.home?.logo || null,
 
     awayLogo:
-      teams?.away?.logo ||
-      null,
+      teams?.away?.logo || null,
 
     homeScore:
       goals?.home ?? null,
@@ -72,56 +82,71 @@ function normalizeFixture(item) {
     awayScore:
       goals?.away ?? null,
 
+    halftimeHome:
+      goals?.halftime?.home ?? null,
+
+    halftimeAway:
+      goals?.halftime?.away ?? null,
+
     competition:
       league?.name ||
       "Football",
 
+    leagueId:
+      league?.id || null,
+
     competitionLogo:
-      league?.logo ||
-      null,
+      league?.logo || null,
 
     country:
-      league?.country ||
-      "",
+      league?.country || "",
+
+    season:
+      league?.season || null,
+
+    round:
+      league?.round || null,
 
     date:
-      fixture?.date ||
-      null,
+      fixture?.date || null,
+
+    timestamp:
+      fixture?.timestamp || null,
+
+    timezone:
+      fixture?.timezone || null,
 
     elapsed:
-      status?.elapsed ??
-      null,
+      status?.elapsed ?? null,
 
     shortStatus:
-      status?.short ||
-      "",
+      status?.short || "",
 
     longStatus:
-      status?.long ||
-      "",
+      status?.long || "",
 
     venue:
-      fixture?.venue?.name ||
-      null,
+      fixture?.venue?.name || null,
+
+    venueId:
+      fixture?.venue?.id || null,
+
+    city:
+      fixture?.venue?.city || null,
 
     referee:
-      fixture?.referee ||
-      null,
+      fixture?.referee || null,
   };
 }
 
 function isLiveMatch(match) {
-  const liveStatuses = [
+  return [
     "1H",
     "2H",
     "ET",
     "P",
     "LIVE",
-  ];
-
-  return liveStatuses.includes(
-    match.shortStatus
-  );
+  ].includes(match.shortStatus);
 }
 
 function isFinished(match) {
@@ -129,9 +154,7 @@ function isFinished(match) {
     "FT",
     "AET",
     "PEN",
-  ].includes(
-    match.shortStatus
-  );
+  ].includes(match.shortStatus);
 }
 
 export default function HomeScreen() {
@@ -181,13 +204,13 @@ export default function HomeScreen() {
             ? response.response
             : [];
 
-        const normalized =
-          list.map(
-            normalizeFixture
-          );
+        setMatches(
+          list.map(normalizeFixture)
+        );
 
-        setMatches(normalized);
-        setLastUpdate(new Date());
+        setLastUpdate(
+          new Date()
+        );
       } catch (err) {
         setError(
           err?.message ||
@@ -218,13 +241,15 @@ export default function HomeScreen() {
             ? response.response
             : [];
 
-        const normalized =
+        setLiveMatches(
           list
             .map(normalizeFixture)
-            .filter(isLiveMatch);
+            .filter(isLiveMatch)
+        );
 
-        setLiveMatches(normalized);
-        setLastUpdate(new Date());
+        setLastUpdate(
+          new Date()
+        );
       } catch (err) {
         console.log(
           "GeSoccer Live:",
@@ -246,7 +271,6 @@ export default function HomeScreen() {
           loadToday({
             forceRefresh,
           }),
-
           loadLive({
             forceRefresh,
           }),
@@ -255,7 +279,7 @@ export default function HomeScreen() {
         setLoading(false);
       }
     },
-    [loadLive, loadToday]
+    [loadToday, loadLive]
   );
 
   useEffect(() => {
@@ -263,16 +287,17 @@ export default function HomeScreen() {
 
     const interval =
       setInterval(() => {
-        loadLive();
+        loadLive({
+          forceRefresh: true,
+        });
       }, 60 * 1000);
 
-    return () => {
+    return () =>
       clearInterval(interval);
-    };
   }, [loadAll, loadLive]);
 
-  const onRefresh = useCallback(
-    async () => {
+  const onRefresh =
+    useCallback(async () => {
       setRefreshing(true);
 
       try {
@@ -282,35 +307,21 @@ export default function HomeScreen() {
       } finally {
         setRefreshing(false);
       }
-    },
-    [loadAll]
-  );
+    }, [loadAll]);
 
   const todayDate = useMemo(
     () => formatDate(new Date()),
     []
   );
 
-  const sortedMatches = useMemo(
-    () => {
+  const sortedMatches =
+    useMemo(() => {
       return [...matches].sort(
-        (a, b) => {
-          const aDate =
-            new Date(
-              a.date || 0
-            ).getTime();
-
-          const bDate =
-            new Date(
-              b.date || 0
-            ).getTime();
-
-          return aDate - bDate;
-        }
+        (a, b) =>
+          new Date(a.date || 0).getTime() -
+          new Date(b.date || 0).getTime()
       );
-    },
-    [matches]
-  );
+    }, [matches]);
 
   const displayedMatches =
     sortedMatches.filter(
@@ -408,8 +419,7 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {liveMatches.length >
-          0 && (
+        {liveMatches.length > 0 && (
           <View
             style={styles.section}
           >
@@ -424,9 +434,7 @@ export default function HomeScreen() {
                 }
               >
                 <View
-                  style={
-                    styles.liveDot
-                  }
+                  style={styles.liveDot}
                 />
 
                 <Text
@@ -504,31 +512,30 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {loading &&
-            !hasData && (
-              <View
-                style={styles.center}
-              >
-                <ActivityIndicator
-                  size="large"
-                  color={
-                    brand.green
-                  }
-                />
+          {loading && !hasData && (
+            <View
+              style={styles.center}
+            >
+              <ActivityIndicator
+                size="large"
+                color={
+                  brand.green
+                }
+              />
 
-                <Text
-                  style={[
-                    styles.loadingText,
-                    {
-                      color:
-                        colors.textSecondary,
-                    },
-                  ]}
-                >
-                  Chargement des matchs...
-                </Text>
-              </View>
-            )}
+              <Text
+                style={[
+                  styles.loadingText,
+                  {
+                    color:
+                      colors.textSecondary,
+                  },
+                ]}
+              >
+                Chargement des matchs...
+              </Text>
+            </View>
+          )}
 
           {!loading &&
             error &&
@@ -713,7 +720,8 @@ const styles = StyleSheet.create({
 
   heroTop: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
   },
 
@@ -758,7 +766,8 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 10,
   },
 
