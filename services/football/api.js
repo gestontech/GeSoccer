@@ -1,33 +1,62 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL =
+const API_BASE_URL =
   process.env.EXPO_PUBLIC_GESOCCER_API_URL || "";
 
 const CACHE_PREFIX = "gesoccer:football:v2:";
-
 const DEFAULT_TTL = 5 * 60 * 1000;
 
-function cleanBaseUrl(url) {
-  return String(url || "").replace(/\/+$/, "");
+const CACHE_TTLS = {
+  live: 60 * 1000,
+  fixtures: 60 * 1000,
+  today: 5 * 60 * 1000,
+  standings: 60 * 60 * 1000,
+  topscorers: 60 * 60 * 1000,
+  teams: 24 * 60 * 60 * 1000,
+  leagues: 24 * 60 * 60 * 1000,
+  players: 6 * 60 * 60 * 1000,
+  transfers: 12 * 60 * 60 * 1000,
+};
+
+function getTtl(endpoint) {
+  return CACHE_TTLS[endpoint] || DEFAULT_TTL;
 }
 
-function buildCacheKey(endpoint, params = {}) {
-  const query = Object.keys(params)
-    .sort()
-    .map(
-      (key) =>
-        `${key}=${encodeURIComponent(
-          String(params[key])
-        )}`
-    )
-    .join("&");
+function buildUrl(endpoint, params = {}) {
+  if (!API_BASE_URL) {
+    throw new Error(
+      "EXPO_PUBLIC_GESOCCER_API_URL is not configured."
+    );
+  }
 
-  return `${CACHE_PREFIX}${endpoint}?${query}`;
+  const searchParams = new URLSearchParams();
+
+  searchParams.set("endpoint", endpoint);
+
+  for (const [key, value] of Object.entries(params)) {
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        searchParams.append(key, String(item));
+      }
+    } else {
+      searchParams.set(key, String(value));
+    }
+  }
+
+  return `${API_BASE_URL}?${searchParams.toString()}`;
 }
 
-async function readCache(key) {
+async function readCache(cacheKey) {
   try {
-    const raw = await AsyncStorage.getItem(key);
+    const raw = await AsyncStorage.getItem(cacheKey);
 
     if (!raw) {
       return null;
@@ -37,185 +66,83 @@ async function readCache(key) {
 
     if (
       !cached ||
-      typeof cached.timestamp !== "number" ||
-      typeof cached.ttl !== "number"
+      typeof cached !== "object" ||
+      !cached.timestamp
     ) {
+      await AsyncStorage.removeItem(cacheKey);
       return null;
     }
 
-    const age =
-      Date.now() - cached.timestamp;
-
-    if (age > cached.ttl) {
-      await AsyncStorage.removeItem(key);
-      return null;
-    }
-
-    return cached.data;
+    return cached;
   } catch {
     return null;
   }
 }
 
-async function writeCache(
-  key,
-  data,
-  ttl
-) {
+async function writeCache(cacheKey, data) {
   try {
     await AsyncStorage.setItem(
-      key,
+      cacheKey,
       JSON.stringify({
         timestamp: Date.now(),
-        ttl,
         data,
       })
     );
   } catch {
-    // Le cache ne doit jamais bloquer l'application.
+    // Cache failures must never break the application.
   }
 }
 
-function buildUrl(params = {}) {
-  const base = cleanBaseUrl(API_URL);
+async function requestJson(url) {
+  const controller = new AbortController();
 
-  const query = Object.keys(params)
-    .filter(
-      (key) =>
-        params[key] !== undefined &&
-        params[key] !== null &&
-        params[key] !== ""
-    )
-    .map(
-      (key) =>
-        `${encodeURIComponent(
-          key
-        )}=${encodeURIComponent(
-          String(params[key])
-        )}`
-    )
-    .join("&");
-
-  return `${base}${query ? `?${query}` : ""}`;
-}
-
-function getLocalDate() {
-  const now = new Date();
-
-  const year = now.getFullYear();
-
-  const month = String(
-    now.getMonth() + 1
-  ).padStart(2, "0");
-
-  const day = String(
-    now.getDate()
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-async function request(
-  endpoint,
-  params = {},
-  options = {}
-) {
-  if (!API_URL) {
-    throw new Error(
-      "EXPO_PUBLIC_GESOCCER_API_URL n'est pas configurée."
-    );
-  }
-
-  const ttl =
-    options.ttl !== undefined
-      ? options.ttl
-      : DEFAULT_TTL;
-
-  const cacheKey = buildCacheKey(
-    endpoint,
-    params
-  );
-
-  if (!options.forceRefresh) {
-    const cached =
-      await readCache(cacheKey);
-
-    if (cached !== null) {
-      return cached;
-    }
-  }
-
-  const url = buildUrl({
-    endpoint,
-    ...params,
-  });
-
-  const controller =
-    new AbortController();
-
-  const timeout = setTimeout(
-    () => {
-      controller.abort();
-    },
-    options.timeout || 15000
-  );
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 15000);
 
   try {
-    const response =
-      await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept:
-            "application/json",
-        },
-        signal:
-          controller.signal,
-      });
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+    });
 
-    const text =
-      await response.text();
+    const text = await response.text();
 
-    let data;
+    let body;
 
     try {
-      data = JSON.parse(text);
+      body = text ? JSON.parse(text) : null;
     } catch {
-      data = {
-        error:
-          text ||
-          "Réponse invalide du serveur.",
-      };
-    }
-
-    if (!response.ok) {
       throw new Error(
-        data?.error ||
-          data?.message ||
-          `GeSoccer API ${response.status}`
+        "The football API returned invalid JSON."
       );
     }
 
+    if (!response.ok) {
+      const providerMessage =
+        body?.message ||
+        body?.error ||
+        `HTTP ${response.status}`;
+
+      throw new Error(providerMessage);
+    }
+
     if (
-      data &&
-      data.errors &&
-      Object.keys(data.errors).length > 0
+      body?.errors &&
+      typeof body.errors === "object" &&
+      Object.keys(body.errors).length > 0
     ) {
       throw new Error(
-        Object.values(
-          data.errors
-        )
+        Object.values(body.errors)
           .map(String)
           .join(", ")
       );
     }
 
-    await writeCache(
-      cacheKey,
-      data,
-      ttl
-    );
-
-    return data;
+    return body;
   } finally {
     clearTimeout(timeout);
   }
@@ -226,159 +153,102 @@ export async function footballRequest(
   params = {},
   options = {}
 ) {
-  return request(
-    endpoint,
-    params,
-    options
-  );
+  const {
+    forceRefresh = false,
+    useCache = true,
+  } = options;
+
+  const cacheKey =
+    `${CACHE_PREFIX}${endpoint}:` +
+    JSON.stringify(params);
+
+  const ttl = getTtl(endpoint);
+
+  if (useCache && !forceRefresh) {
+    const cached = await readCache(cacheKey);
+
+    if (cached) {
+      const age = Date.now() - cached.timestamp;
+
+      if (age < ttl) {
+        return cached.data;
+      }
+    }
+  }
+
+  const url = buildUrl(endpoint, params);
+
+  const data = await requestJson(url);
+
+  if (useCache) {
+    await writeCache(cacheKey, data);
+  }
+
+  return data;
 }
 
 export const footballApi = {
-  fixtures(
-    params = {},
-    options = {}
-  ) {
-    return request(
+  fixtures(params = {}, options = {}) {
+    return footballRequest(
       "fixtures",
       params,
-      {
-        ttl:
-          5 * 60 * 1000,
-        ...options,
-      }
+      options
     );
   },
 
-  today(options = {}) {
-    const date =
-      options.date ||
-      getLocalDate();
-
-    return request(
-      "fixtures",
-      { date },
-      {
-        ttl:
-          5 * 60 * 1000,
-        ...options,
-      }
+  live(params = {}, options = {}) {
+    return footballRequest(
+      "live",
+      params,
+      options
     );
   },
 
-  live(options = {}) {
-    return request(
-      "fixtures",
-      { live: "all" },
-      {
-        ttl:
-          60 * 1000,
-        ...options,
-      }
-    );
-  },
-
-  fixture(
-    id,
-    options = {}
-  ) {
-    return request(
-      "fixtures",
-      { id },
-      {
-        ttl:
-          60 * 1000,
-        ...options,
-      }
-    );
-  },
-
-  standings(
-    params = {},
-    options = {}
-  ) {
-    return request(
+  standings(params = {}, options = {}) {
+    return footballRequest(
       "standings",
       params,
-      {
-        ttl:
-          60 * 60 * 1000,
-        ...options,
-      }
+      options
     );
   },
 
-  teams(
-    params = {},
-    options = {}
-  ) {
-    return request(
+  teams(params = {}, options = {}) {
+    return footballRequest(
       "teams",
       params,
-      {
-        ttl:
-          24 * 60 * 60 * 1000,
-        ...options,
-      }
+      options
     );
   },
 
-  players(
-    params = {},
-    options = {}
-  ) {
-    return request(
+  players(params = {}, options = {}) {
+    return footballRequest(
       "players",
       params,
-      {
-        ttl:
-          6 * 60 * 60 * 1000,
-        ...options,
-      }
+      options
     );
   },
 
-  topScorers(
-    params = {},
-    options = {}
-  ) {
-    return request(
+  topscorers(params = {}, options = {}) {
+    return footballRequest(
       "topscorers",
       params,
-      {
-        ttl:
-          60 * 60 * 1000,
-        ...options,
-      }
+      options
     );
   },
 
-  transfers(
-    params = {},
-    options = {}
-  ) {
-    return request(
+  transfers(params = {}, options = {}) {
+    return footballRequest(
       "transfers",
       params,
-      {
-        ttl:
-          12 * 60 * 60 * 1000,
-        ...options,
-      }
+      options
     );
   },
 
-  leagues(
-    params = {},
-    options = {}
-  ) {
-    return request(
+  leagues(params = {}, options = {}) {
+    return footballRequest(
       "leagues",
       params,
-      {
-        ttl:
-          24 * 60 * 60 * 1000,
-        ...options,
-      }
+      options
     );
   },
 };
