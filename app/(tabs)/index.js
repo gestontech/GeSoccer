@@ -717,9 +717,15 @@ function CompetitionSection({
 
   return (
     <View
-      style={
-        styles.competitionSection
-      }
+      style={[
+        styles.competitionSection,
+        {
+          backgroundColor:
+            colors.surface,
+          borderColor:
+            colors.border,
+        },
+      ]}
     >
       <TouchableOpacity
         activeOpacity={0.75}
@@ -989,17 +995,27 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  /*
+   * Petit cadre autour de chaque championnat.
+   *
+   * Le fond et la bordure utilisent les couleurs
+   * du thème afin de fonctionner automatiquement
+   * en mode clair et en mode sombre.
+   */
   competitionSection: {
     marginHorizontal: 12,
-    marginBottom: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderRadius: 16,
+    overflow: "hidden",
   },
 
   competitionHeader: {
-    minHeight: 36,
+    minHeight: 42,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 4,
+    paddingHorizontal: 12,
   },
 
   competitionTitleWrap: {
@@ -1034,8 +1050,6 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     width: "100%",
-    marginTop: 3,
-    marginBottom: 0,
   },
 
   liveLabel: {
@@ -1066,6 +1080,8 @@ const styles = StyleSheet.create({
   moreMatchesButton: {
     minHeight: 62,
     marginTop: 8,
+    marginHorizontal: 8,
+    marginBottom: 8,
     paddingHorizontal: 10,
     borderWidth: 1,
     borderRadius: 15,
