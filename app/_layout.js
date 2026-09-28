@@ -12,14 +12,24 @@ import {
   useAppTheme,
 } from "../theme/useAppTheme";
 
+import {
+  FavoritesProvider,
+} from "../context/FavoritesContext";
+
 export default function RootLayout() {
-  const { dark, brand } =
-    useAppTheme();
+  const {
+    dark,
+    brand,
+  } = useAppTheme();
 
   return (
-    <>
+    <FavoritesProvider>
       <StatusBar
-        style="light"
+        style={
+          dark
+            ? "light"
+            : "dark"
+        }
         backgroundColor={
           brand.green
         }
@@ -30,9 +40,10 @@ export default function RootLayout() {
           headerShown: false,
 
           contentStyle: {
-            backgroundColor: dark
-              ? "#101010"
-              : "#F2F2F2",
+            backgroundColor:
+              dark
+                ? "#101010"
+                : "#F2F2F2",
           },
 
           animation:
@@ -74,7 +85,19 @@ export default function RootLayout() {
         <Stack.Screen
           name="settings"
         />
+
+        <Stack.Screen
+          name="about"
+        />
+
+        <Stack.Screen
+          name="report-problem"
+        />
+
+        <Stack.Screen
+          name="remove-ads"
+        />
       </Stack>
-    </>
+    </FavoritesProvider>
   );
 }
