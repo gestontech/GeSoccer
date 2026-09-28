@@ -14,6 +14,20 @@ import { router } from "expo-router";
 import Glass from "../glass/Glass";
 import { useAppTheme } from "../../theme/useAppTheme";
 
+const LIVE_STATUSES = [
+  "1H",
+  "2H",
+  "ET",
+  "P",
+  "LIVE",
+];
+
+const FINISHED_STATUSES = [
+  "FT",
+  "AET",
+  "PEN",
+];
+
 function formatKickoff(date) {
   if (!date) {
     return "--:--";
@@ -25,44 +39,42 @@ function formatKickoff(date) {
     return "--:--";
   }
 
-  return value.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return value.toLocaleTimeString(
+    [],
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
 }
 
-function getStatusLabel(match) {
+function getMatchState(match) {
   if (
     match.status === "live" ||
-    ["1H", "2H", "ET", "P", "LIVE"].includes(
+    LIVE_STATUSES.includes(
       match.shortStatus
     )
   ) {
-    if (
-      match.elapsed !== null &&
-      match.elapsed !== undefined
-    ) {
-      return `${match.elapsed}'`;
-    }
-
-    return "LIVE";
+    return "live";
   }
 
   if (
-    ["FT", "AET", "PEN"].includes(
+    match.status === "finished" ||
+    FINISHED_STATUSES.includes(
       match.shortStatus
     )
   ) {
-    return "TERMINÉ";
+    return "finished";
   }
 
-  return formatKickoff(match.date);
+  return "upcoming";
 }
 
-function Team({
+function TeamRow({
   name,
   logo,
   score,
+  winner,
   colors,
   onPress,
 }) {
@@ -74,7 +86,9 @@ function Team({
     >
       {logo ? (
         <Image
-          source={{ uri: logo }}
+          source={{
+            uri: logo,
+          }}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -90,18 +104,25 @@ function Team({
         >
           <Ionicons
             name="football-outline"
-            size={14}
-            color={colors.textSecondary}
+            size={13}
+            color={
+              colors.textSecondary
+            }
           />
         </View>
       )}
 
       <Text
         numberOfLines={1}
+        ellipsizeMode="tail"
         style={[
           styles.teamName,
           {
             color: colors.text,
+            fontWeight:
+              winner === true
+                ? "900"
+                : "700",
           },
         ]}
       >
@@ -131,11 +152,14 @@ export default function MatchCard({
   const { colors, brand } =
     useAppTheme();
 
-  const live =
-    match.status === "live" ||
-    ["1H", "2H", "ET", "P", "LIVE"].includes(
-      match.shortStatus
-    );
+  const state =
+    getMatchState(match);
+
+  const isFinished =
+    state === "finished";
+
+  const isLive =
+    state === "live";
 
   function openMatch() {
     if (!match?.id) {
@@ -143,42 +167,33 @@ export default function MatchCard({
     }
 
     router.push({
-      pathname: "/match/[id]",
+      pathname:
+        "/match/[id]",
       params: {
-        id: String(match.id),
+        id: String(
+          match.id
+        ),
       },
     });
   }
 
-  function openTeam(teamId) {
-    if (!teamId) {
+  function openTeam(id) {
+    if (!id) {
       return;
     }
 
     router.push({
-      pathname: "/team/[id]",
+      pathname:
+        "/team/[id]",
       params: {
-        id: String(teamId),
-      },
-    });
-  }
-
-  function openCompetition() {
-    if (!match?.leagueId) {
-      return;
-    }
-
-    router.push({
-      pathname: "/competition/[id]",
-      params: {
-        id: String(match.leagueId),
+        id: String(id),
       },
     });
   }
 
   return (
     <TouchableOpacity
-      activeOpacity={0.88}
+      activeOpacity={0.9}
       onPress={openMatch}
       style={styles.wrapper}
     >
@@ -187,148 +202,138 @@ export default function MatchCard({
         style={[
           styles.card,
           {
-            borderColor: live
-              ? "rgba(231,71,71,0.32)"
+            borderColor: isLive
+              ? "rgba(231,71,71,0.35)"
               : colors.border,
           },
         ]}
       >
-        {/* COMPÉTITION + STATUT */}
-        <View style={styles.top}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={openCompetition}
-            style={styles.competition}
+        <View
+          style={styles.matchRow}
+        >
+          {/* ÉQUIPE DOMICILE */}
+          <TeamRow
+            name={
+              match.homeTeam
+            }
+            logo={
+              match.homeLogo
+            }
+            score={
+              match.homeScore
+            }
+            winner={
+              match.homeWinner
+            }
+            colors={colors}
+            onPress={() =>
+              openTeam(
+                match.homeTeamId
+              )
+            }
+          />
+
+          {/* CENTRE */}
+          <View
+            style={
+              styles.center
+            }
           >
-            {match.competitionLogo ? (
-              <Image
-                source={{
-                  uri: match.competitionLogo,
-                }}
-                style={styles.competitionLogo}
-                resizeMode="contain"
-              />
+            {isFinished ||
+            isLive ? (
+              <Text
+                style={[
+                  styles.scoreSeparator,
+                  {
+                    color:
+                      colors.text,
+                  },
+                ]}
+              >
+                -
+              </Text>
             ) : (
-              <Ionicons
-                name="trophy-outline"
-                size={13}
-                color={colors.textSecondary}
-              />
+              <Text
+                style={[
+                  styles.time,
+                  {
+                    color:
+                      colors.text,
+                  },
+                ]}
+              >
+                {formatKickoff(
+                  match.date
+                )}
+              </Text>
             )}
+          </View>
 
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.competitionText,
-                {
-                  color:
-                    colors.textSecondary,
-                },
-              ]}
-            >
-              {match.competition ||
-                "Football"}
-            </Text>
-          </TouchableOpacity>
+          {/* ÉQUIPE EXTÉRIEURE */}
+          <TeamRow
+            name={
+              match.awayTeam
+            }
+            logo={
+              match.awayLogo
+            }
+            score={
+              match.awayScore
+            }
+            winner={
+              match.awayWinner
+            }
+            colors={colors}
+            onPress={() =>
+              openTeam(
+                match.awayTeamId
+              )
+            }
+          />
 
+          {/* STATUT */}
           <View
             style={[
-              styles.status,
-              {
-                backgroundColor: live
-                  ? "rgba(231,71,71,0.13)"
-                  : "rgba(128,128,128,0.10)",
-              },
+              styles.statusBox,
+              isLive &&
+                styles.liveStatusBox,
             ]}
           >
-            {live && (
-              <View
-                style={styles.statusDot}
-              />
-            )}
+            {isLive ? (
+              <>
+                <View
+                  style={
+                    styles.liveDot
+                  }
+                />
 
-            <Text
-              style={[
-                styles.statusText,
-                {
-                  color: live
-                    ? brand.red
-                    : colors.textSecondary,
-                },
-              ]}
-            >
-              {getStatusLabel(match)}
-            </Text>
+                <Text
+                  style={
+                    styles.liveText
+                  }
+                >
+                  {match.elapsed !==
+                    null &&
+                  match.elapsed !==
+                    undefined
+                    ? `${match.elapsed}'`
+                    : "LIVE"}
+                </Text>
+              </>
+            ) : isFinished ? (
+              <Text
+                style={[
+                  styles.finishedText,
+                  {
+                    color:
+                      colors.textSecondary,
+                  },
+                ]}
+              >
+                TF
+              </Text>
+            ) : null}
           </View>
-        </View>
-
-        {/* ÉQUIPES */}
-        <View style={styles.teams}>
-          <Team
-            name={match.homeTeam}
-            logo={match.homeLogo}
-            score={match.homeScore}
-            colors={colors}
-            onPress={() =>
-              openTeam(match.homeTeamId)
-            }
-          />
-
-          <View style={styles.middle}>
-            <Text
-              style={[
-                styles.vs,
-                {
-                  color:
-                    colors.textSecondary,
-                },
-              ]}
-            >
-              VS
-            </Text>
-          </View>
-
-          <Team
-            name={match.awayTeam}
-            logo={match.awayLogo}
-            score={match.awayScore}
-            colors={colors}
-            onPress={() =>
-              openTeam(match.awayTeamId)
-            }
-          />
-        </View>
-
-        {/* BAS DE CARTE */}
-        <View
-          style={[
-            styles.bottom,
-            {
-              borderTopColor:
-                colors.border,
-            },
-          ]}
-        >
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.country,
-              {
-                color:
-                  colors.textSecondary,
-              },
-            ]}
-          >
-            {match.country || "Football"}
-          </Text>
-
-          {/* Aucun texte "Détails" :
-              la carte entière reste cliquable */}
-          <Ionicons
-            name="chevron-forward"
-            size={14}
-            color={brand.green}
-          />
         </View>
       </Glass>
     </TouchableOpacity>
@@ -337,126 +342,110 @@ export default function MatchCard({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 6,
+    marginBottom: 5,
   },
 
   card: {
+    minHeight: 57,
     borderRadius: 15,
-    overflow: "hidden",
     borderWidth: 1,
-    paddingHorizontal: 9,
-    paddingVertical: 8,
+    overflow: "hidden",
+    paddingHorizontal: 7,
+    paddingVertical: 6,
   },
 
-  top: {
+  matchRow: {
+    minHeight: 43,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: 20,
-  },
-
-  competition: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 6,
-  },
-
-  competitionLogo: {
-    width: 14,
-    height: 14,
-    marginRight: 4,
-  },
-
-  competitionText: {
-    flex: 1,
-    fontSize: 9,
-    fontWeight: "700",
-  },
-
-  status: {
-    minHeight: 19,
-    paddingHorizontal: 6,
-    borderRadius: 7,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  statusDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#E74747",
-    marginRight: 3,
-  },
-
-  statusText: {
-    fontSize: 8,
-    fontWeight: "900",
-  },
-
-  teams: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 7,
   },
 
   team: {
     flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
     alignItems: "center",
   },
 
   logo: {
-    width: 27,
-    height: 27,
-    marginBottom: 3,
+    width: 25,
+    height: 25,
+    marginRight: 6,
   },
 
   logoFallback: {
-    width: 27,
-    height: 27,
-    borderRadius: 14,
+    width: 25,
+    height: 25,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 3,
+    marginRight: 6,
   },
 
   teamName: {
-    width: "100%",
-    textAlign: "center",
-    fontSize: 9,
-    fontWeight: "800",
+    flex: 1,
+    minWidth: 0,
+    fontSize: 10,
   },
 
   score: {
-    fontSize: 16,
+    width: 20,
+    textAlign: "center",
+    fontSize: 15,
     fontWeight: "900",
-    marginTop: 1,
+    marginLeft: 4,
   },
 
-  middle: {
-    width: 34,
+  center: {
+    minWidth: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+
+  scoreSeparator: {
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  time: {
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  statusBox: {
+    width: 28,
+    minHeight: 23,
+    marginLeft: 3,
+    borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  vs: {
+  liveStatusBox: {
+    width: 38,
+    backgroundColor:
+      "rgba(231,71,71,0.10)",
+    flexDirection: "row",
+  },
+
+  liveDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor:
+      "#E74747",
+    marginRight: 3,
+  },
+
+  liveText: {
+    color: "#E74747",
     fontSize: 8,
     fontWeight: "900",
   },
 
-  bottom: {
-    marginTop: 6,
-    paddingTop: 5,
-    borderTopWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  country: {
-    flex: 1,
-    fontSize: 8,
-    fontWeight: "600",
+  finishedText: {
+    fontSize: 9,
+    fontWeight: "900",
   },
 });
