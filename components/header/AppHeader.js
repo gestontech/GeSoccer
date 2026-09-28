@@ -1,7 +1,4 @@
-import React, {
-  useState,
-} from "react";
-
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,22 +6,13 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
-import {
-  Ionicons,
-} from "@expo/vector-icons";
-
-import {
-  router,
-} from "expo-router";
-
-import {
-  useDateSelection,
-} from "../../context/DateSelectionContext";
-
+import { useDateSelection } from "../../context/DateSelectionContext";
 import SideMenu from "../menu/SideMenu";
 
-const SKY_BLUE = "#63BFE8";
+const GREEN = "#4B842F";
 
 export default function AppHeader() {
   const {
@@ -38,45 +26,23 @@ export default function AppHeader() {
     selectLive,
   } = useDateSelection();
 
-  const [
-    menuVisible,
-    setMenuVisible,
-  ] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const getDateLabel = (item) => {
-    if (item.key === yesterdayKey) {
-      return "HIER";
-    }
-
-    if (item.key === todayKey) {
-      return "AUJOURD'HUI";
-    }
-
-    if (item.key === tomorrowKey) {
-      return "DEMAIN";
-    }
-
+    if (item.key === yesterdayKey) return "HIER";
+    if (item.key === todayKey) return "AUJOURD'HUI";
+    if (item.key === tomorrowKey) return "DEMAIN";
     return item.label;
   };
 
   return (
     <>
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor:
-              SKY_BLUE,
-          },
-        ]}
-      >
+      <View style={styles.container}>
         <View style={styles.topRow}>
           <TouchableOpacity
             style={styles.menuButton}
             activeOpacity={0.75}
-            onPress={() =>
-              setMenuVisible(true)
-            }
+            onPress={() => setMenuVisible(true)}
           >
             <View style={styles.menu}>
               <View style={styles.line} />
@@ -85,17 +51,11 @@ export default function AppHeader() {
             </View>
           </TouchableOpacity>
 
-          <View
-            style={styles.rightActions}
-          >
+          <View style={styles.rightActions}>
             <TouchableOpacity
               style={styles.actionButton}
               activeOpacity={0.75}
-              onPress={() =>
-                router.push(
-                  "/calendar"
-                )
-              }
+              onPress={() => router.push("/calendar")}
             >
               <Ionicons
                 name="calendar-outline"
@@ -107,11 +67,7 @@ export default function AppHeader() {
             <TouchableOpacity
               style={styles.actionButton}
               activeOpacity={0.75}
-              onPress={() =>
-                router.push(
-                  "/search"
-                )
-              }
+              onPress={() => router.push("/search")}
             >
               <Ionicons
                 name="search-outline"
@@ -124,85 +80,59 @@ export default function AppHeader() {
 
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={
-            false
-          }
-          contentContainerStyle={
-            styles.dateScroller
-          }
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.dateScroller}
         >
           {dates.map((item) => {
             const selected =
-              !liveMode &&
-              item.key ===
-                selectedDate;
+              !liveMode && item.key === selectedDate;
 
             return (
-              <React.Fragment
-                key={item.key}
-              >
+              <React.Fragment key={item.key}>
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  onPress={() =>
-                    selectDate(
-                      item.key
-                    )
-                  }
+                  onPress={() => selectDate(item.key)}
                   style={[
                     styles.dateItem,
-                    selected &&
-                      styles.dateItemSelected,
+                    selected && styles.dateItemSelected,
                   ]}
                 >
                   <Text
                     numberOfLines={1}
                     style={[
                       styles.dateText,
-                      selected &&
-                        styles.dateTextSelected,
+                      selected && styles.dateTextSelected,
                     ]}
                   >
                     {getDateLabel(item)}
                   </Text>
 
                   {selected && (
-                    <View
-                      style={
-                        styles.dateIndicator
-                      }
-                    />
+                    <View style={styles.dateIndicator} />
                   )}
                 </TouchableOpacity>
 
                 {item.key === todayKey && (
                   <TouchableOpacity
                     activeOpacity={0.8}
-                    onPress={
-                      selectLive
-                    }
+                    onPress={selectLive}
                     style={[
                       styles.dateItem,
-                      liveMode &&
-                        styles.dateItemSelected,
+                      liveMode && styles.dateItemSelected,
                     ]}
                   >
                     <Text
                       numberOfLines={1}
                       style={[
                         styles.dateText,
-                        liveMode &&
-                          styles.dateTextSelected,
+                        liveMode && styles.dateTextSelected,
                       ]}
                     >
                       EN DIRECT
                     </Text>
 
                     {liveMode && (
-                      <View
-                        style={
-                          styles.dateIndicator
-                        }
-                      />
+                      <View style={styles.dateIndicator} />
                     )}
                   </TouchableOpacity>
                 )}
@@ -214,9 +144,7 @@ export default function AppHeader() {
 
       <SideMenu
         visible={menuVisible}
-        onClose={() =>
-          setMenuVisible(false)
-        }
+        onClose={() => setMenuVisible(false)}
       />
     </>
   );
@@ -226,6 +154,7 @@ const styles = StyleSheet.create({
   container: {
     height: 126,
     width: "100%",
+    backgroundColor: GREEN,
     elevation: 8,
     shadowOpacity: 0,
   },
@@ -290,13 +219,11 @@ const styles = StyleSheet.create({
   },
 
   dateItemSelected: {
-    backgroundColor:
-      "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(255,255,255,0.22)",
   },
 
   dateText: {
-    color:
-      "rgba(255,255,255,0.78)",
+    color: "rgba(255,255,255,0.78)",
     fontSize: 11,
     fontWeight: "800",
     textAlign: "center",
