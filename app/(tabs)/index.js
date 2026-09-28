@@ -20,7 +20,6 @@ import {
 } from "@expo/vector-icons";
 
 import MatchCard from "../../components/matches/MatchCard";
-import GeSoccerLogo from "../../components/logo/GeSoccerLogo";
 
 import {
   footballApi,
@@ -400,18 +399,10 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#63BFE8"
+            tintColor={brand.green}
           />
         }
       >
-        {/* Logo GeSoccer */}
-        <View style={styles.logoArea}>
-          <GeSoccerLogo
-            size={82}
-            showShadow
-          />
-        </View>
-
         <View
           style={styles.matchesHeader}
         >
@@ -514,7 +505,7 @@ export default function HomeScreen() {
                 >
                   <ActivityIndicator
                     size="large"
-                    color="#63BFE8"
+                    color={brand.green}
                   />
 
                   <Text
@@ -585,9 +576,13 @@ export default function HomeScreen() {
                           true,
                       })
                     }
-                    style={
-                      styles.retryButton
-                    }
+                    style={[
+                      styles.retryButton,
+                      {
+                        backgroundColor:
+                          brand.green,
+                      },
+                    ]}
                   >
                     <Text
                       style={
@@ -732,13 +727,6 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
 
-  logoArea: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-
   matchesHeader: {
     marginHorizontal: 16,
     marginTop: 18,
@@ -825,7 +813,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 11,
     borderRadius: 14,
-    backgroundColor: "#63BFE8",
   },
 
   retryText: {
