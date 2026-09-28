@@ -154,9 +154,7 @@ function getCompetitionKey(match) {
   ].join("::");
 }
 
-function groupMatchesByCompetition(
-  list
-) {
+function groupMatchesByCompetition(list) {
   const groups = new Map();
 
   list.forEach((match) => {
@@ -194,9 +192,7 @@ function groupMatchesByCompetition(
   );
 }
 
-function formatCompetitionTitle(
-  group
-) {
+function formatCompetitionTitle(group) {
   if (
     group.competition &&
     group.country
@@ -527,7 +523,9 @@ export default function HomeScreen() {
         {loading &&
           !hasData && (
             <View
-              style={styles.loadingContainer}
+              style={
+                styles.loadingContainer
+              }
             >
               <ActivityIndicator
                 size="large"
@@ -611,7 +609,9 @@ export default function HomeScreen() {
                 ]}
               >
                 <Text
-                  style={styles.retryText}
+                  style={
+                    styles.retryText
+                  }
                 >
                   Réessayer
                 </Text>
@@ -695,6 +695,25 @@ function CompetitionSection({
       },
     });
   }
+
+  /*
+   * RÈGLE D'AFFICHAGE :
+   *
+   * 1 à 10 matchs :
+   * → tous les matchs sont affichés
+   * → aucun bouton "Voir les autres matchs"
+   *
+   * Plus de 10 matchs :
+   * → seuls les 10 premiers sont affichés
+   * → bouton "Voir les autres matchs"
+   */
+  const hasMoreMatches =
+    group.matches.length > 10;
+
+  const visibleMatches =
+    hasMoreMatches
+      ? group.matches.slice(0, 10)
+      : group.matches;
 
   return (
     <View
@@ -794,7 +813,7 @@ function CompetitionSection({
         ]}
       />
 
-      {group.matches.map(
+      {visibleMatches.map(
         (match) => (
           <MatchCard
             key={match.id}
@@ -810,91 +829,73 @@ function CompetitionSection({
         )
       )}
 
-      {group.leagueId && (
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={openCompetition}
-          style={[
-            styles.competitionPreview,
-            {
-              borderColor:
-                colors.border,
-            },
-          ]}
-        >
-          {group.competitionLogo ? (
-            <Image
-              source={{
-                uri: group.competitionLogo,
-              }}
-              style={
-                styles.previewLogo
-              }
-              resizeMode="contain"
-            />
-          ) : (
-            <View
-              style={[
-                styles.previewFallback,
-                {
-                  backgroundColor:
-                    "rgba(75,132,47,0.10)",
-                },
-              ]}
-            >
-              <Ionicons
-                name="trophy-outline"
-                size={20}
-                color={
-                  brand.green
-                }
-              />
-            </View>
-          )}
-
-          <View
-            style={
-              styles.previewTextWrap
-            }
+      {hasMoreMatches &&
+        group.leagueId && (
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={openCompetition}
+            style={[
+              styles.moreMatchesButton,
+              {
+                backgroundColor:
+                  colors.surface,
+                borderColor:
+                  colors.border,
+              },
+            ]}
           >
+            {group.competitionLogo ? (
+              <Image
+                source={{
+                  uri: group.competitionLogo,
+                }}
+                style={
+                  styles.moreMatchesLogo
+                }
+                resizeMode="contain"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.moreMatchesFallback,
+                  {
+                    backgroundColor:
+                      "rgba(75,132,47,0.10)",
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="trophy-outline"
+                  size={18}
+                  color={
+                    brand.green
+                  }
+                />
+              </View>
+            )}
+
             <Text
               numberOfLines={1}
               style={[
-                styles.previewTitle,
+                styles.moreMatchesText,
                 {
                   color:
                     colors.text,
                 },
               ]}
             >
-              {group.competition}
+              Voir les autres matchs
             </Text>
 
-            {group.country ? (
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.previewCountry,
-                  {
-                    color:
-                      colors.textSecondary,
-                  },
-                ]}
-              >
-                {group.country}
-              </Text>
-            ) : null}
-          </View>
-
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={
-              colors.textSecondary
-            }
-          />
-        </TouchableOpacity>
-      )}
+            <Ionicons
+              name="chevron-forward"
+              size={19}
+              color={
+                colors.textSecondary
+              }
+            />
+          </TouchableOpacity>
+        )}
     </View>
   );
 }
@@ -920,14 +921,17 @@ function EmptyState({
       <Ionicons
         name={icon}
         size={40}
-        color={colors.textSecondary}
+        color={
+          colors.textSecondary
+        }
       />
 
       <Text
         style={[
           styles.messageTitle,
           {
-            color: colors.text,
+            color:
+              colors.text,
           },
         ]}
       >
@@ -1048,7 +1052,8 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: "#E74747",
+    backgroundColor:
+      "#E74747",
     marginRight: 4,
   },
 
@@ -1058,7 +1063,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  competitionPreview: {
+  moreMatchesButton: {
     minHeight: 62,
     marginTop: 8,
     paddingHorizontal: 10,
@@ -1068,13 +1073,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  previewLogo: {
+  moreMatchesLogo: {
     width: 34,
     height: 34,
     marginHorizontal: 4,
   },
 
-  previewFallback: {
+  moreMatchesFallback: {
     width: 38,
     height: 38,
     borderRadius: 12,
@@ -1082,21 +1087,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  previewTextWrap: {
+  moreMatchesText: {
     flex: 1,
     minWidth: 0,
     marginLeft: 9,
-  },
-
-  previewTitle: {
     fontSize: 13,
     fontWeight: "900",
-  },
-
-  previewCountry: {
-    marginTop: 2,
-    fontSize: 10,
-    fontWeight: "600",
   },
 
   loadingContainer: {
