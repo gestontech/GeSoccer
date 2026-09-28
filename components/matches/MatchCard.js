@@ -11,7 +11,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
-import Glass from "../glass/Glass";
 import { useAppTheme } from "../../theme/useAppTheme";
 
 const LIVE_STATUSES = [
@@ -39,30 +38,23 @@ function formatKickoff(date) {
     return "--:--";
   }
 
-  return value.toLocaleTimeString(
-    [],
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-    }
-  );
+  return value.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function getMatchState(match) {
   if (
-    match.status === "live" ||
-    LIVE_STATUSES.includes(
-      match.shortStatus
-    )
+    match?.status === "live" ||
+    LIVE_STATUSES.includes(match?.shortStatus)
   ) {
     return "live";
   }
 
   if (
-    match.status === "finished" ||
-    FINISHED_STATUSES.includes(
-      match.shortStatus
-    )
+    match?.status === "finished" ||
+    FINISHED_STATUSES.includes(match?.shortStatus)
   ) {
     return "finished";
   }
@@ -70,96 +62,47 @@ function getMatchState(match) {
   return "upcoming";
 }
 
-function TeamRow({
-  name,
+function TeamLogo({
   logo,
-  score,
-  winner,
   colors,
-  onPress,
 }) {
+  if (logo) {
+    return (
+      <Image
+        source={{ uri: logo }}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+    );
+  }
+
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
-      onPress={onPress}
-      style={styles.team}
+    <View
+      style={[
+        styles.logoFallback,
+        {
+          backgroundColor: colors.border,
+        },
+      ]}
     >
-      {logo ? (
-        <Image
-          source={{
-            uri: logo,
-          }}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      ) : (
-        <View
-          style={[
-            styles.logoFallback,
-            {
-              backgroundColor:
-                colors.border,
-            },
-          ]}
-        >
-          <Ionicons
-            name="football-outline"
-            size={13}
-            color={
-              colors.textSecondary
-            }
-          />
-        </View>
-      )}
-
-      <Text
-        numberOfLines={1}
-        ellipsizeMode="tail"
-        style={[
-          styles.teamName,
-          {
-            color: colors.text,
-            fontWeight:
-              winner === true
-                ? "900"
-                : "700",
-          },
-        ]}
-      >
-        {name}
-      </Text>
-
-      <Text
-        style={[
-          styles.score,
-          {
-            color: colors.text,
-          },
-        ]}
-      >
-        {score !== null &&
-        score !== undefined
-          ? score
-          : "-"}
-      </Text>
-    </TouchableOpacity>
+      <Ionicons
+        name="football-outline"
+        size={13}
+        color={colors.textSecondary}
+      />
+    </View>
   );
 }
 
 export default function MatchCard({
   match,
 }) {
-  const { colors, brand } =
-    useAppTheme();
+  const { colors } = useAppTheme();
 
-  const state =
-    getMatchState(match);
+  const state = getMatchState(match);
 
-  const isFinished =
-    state === "finished";
-
-  const isLive =
-    state === "live";
+  const isFinished = state === "finished";
+  const isLive = state === "live";
 
   function openMatch() {
     if (!match?.id) {
@@ -167,12 +110,9 @@ export default function MatchCard({
     }
 
     router.push({
-      pathname:
-        "/match/[id]",
+      pathname: "/match/[id]",
       params: {
-        id: String(
-          match.id
-        ),
+        id: String(match.id),
       },
     });
   }
@@ -183,8 +123,7 @@ export default function MatchCard({
     }
 
     router.push({
-      pathname:
-        "/team/[id]",
+      pathname: "/team/[id]",
       params: {
         id: String(id),
       },
@@ -193,259 +132,285 @@ export default function MatchCard({
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={0.72}
       onPress={openMatch}
-      style={styles.wrapper}
+      style={[
+        styles.wrapper,
+        {
+          borderBottomColor: colors.border,
+        },
+      ]}
     >
-      <Glass
-        intensity={35}
-        style={[
-          styles.card,
-          {
-            borderColor: isLive
-              ? "rgba(231,71,71,0.35)"
-              : colors.border,
-          },
-        ]}
-      >
-        <View
-          style={styles.matchRow}
+      <View style={styles.matchRow}>
+        {/* DOMICILE */}
+        <TouchableOpacity
+          activeOpacity={0.72}
+          onPress={() =>
+            openTeam(match.homeTeamId)
+          }
+          style={styles.homeTeam}
         >
-          {/* ÉQUIPE DOMICILE */}
-          <TeamRow
-            name={
-              match.homeTeam
-            }
-            logo={
-              match.homeLogo
-            }
-            score={
-              match.homeScore
-            }
-            winner={
-              match.homeWinner
-            }
+          <TeamLogo
+            logo={match.homeLogo}
             colors={colors}
-            onPress={() =>
-              openTeam(
-                match.homeTeamId
-              )
-            }
           />
 
-          {/* CENTRE */}
-          <View
-            style={
-              styles.center
-            }
-          >
-            {isFinished ||
-            isLive ? (
-              <Text
-                style={[
-                  styles.scoreSeparator,
-                  {
-                    color:
-                      colors.text,
-                  },
-                ]}
-              >
-                -
-              </Text>
-            ) : (
-              <Text
-                style={[
-                  styles.time,
-                  {
-                    color:
-                      colors.text,
-                  },
-                ]}
-              >
-                {formatKickoff(
-                  match.date
-                )}
-              </Text>
-            )}
-          </View>
-
-          {/* ÉQUIPE EXTÉRIEURE */}
-          <TeamRow
-            name={
-              match.awayTeam
-            }
-            logo={
-              match.awayLogo
-            }
-            score={
-              match.awayScore
-            }
-            winner={
-              match.awayWinner
-            }
-            colors={colors}
-            onPress={() =>
-              openTeam(
-                match.awayTeamId
-              )
-            }
-          />
-
-          {/* STATUT */}
-          <View
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
             style={[
-              styles.statusBox,
-              isLive &&
-                styles.liveStatusBox,
+              styles.teamName,
+              {
+                color: colors.text,
+                fontWeight:
+                  match.homeWinner === true
+                    ? "900"
+                    : "700",
+              },
             ]}
           >
-            {isLive ? (
-              <>
-                <View
-                  style={
-                    styles.liveDot
-                  }
-                />
+            {match.homeTeam}
+          </Text>
+        </TouchableOpacity>
 
-                <Text
-                  style={
-                    styles.liveText
-                  }
-                >
-                  {match.elapsed !==
-                    null &&
-                  match.elapsed !==
-                    undefined
-                    ? `${match.elapsed}'`
-                    : "LIVE"}
-                </Text>
-              </>
-            ) : isFinished ? (
+        {/* SCORE / HEURE */}
+        <View style={styles.result}>
+          {isFinished || isLive ? (
+            <View style={styles.scoreLine}>
               <Text
                 style={[
-                  styles.finishedText,
+                  styles.score,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                {match.homeScore ??
+                  "-"}
+              </Text>
+
+              <Text
+                style={[
+                  styles.separator,
                   {
                     color:
                       colors.textSecondary,
                   },
                 ]}
               >
-                TF
+                -
               </Text>
-            ) : null}
-          </View>
+
+              <Text
+                style={[
+                  styles.score,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                {match.awayScore ??
+                  "-"}
+              </Text>
+            </View>
+          ) : (
+            <Text
+              style={[
+                styles.time,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              {formatKickoff(
+                match.date
+              )}
+            </Text>
+          )}
         </View>
-      </Glass>
+
+        {/* EXTÉRIEUR */}
+        <TouchableOpacity
+          activeOpacity={0.72}
+          onPress={() =>
+            openTeam(match.awayTeamId)
+          }
+          style={styles.awayTeam}
+        >
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[
+              styles.teamName,
+              {
+                color: colors.text,
+                fontWeight:
+                  match.awayWinner === true
+                    ? "900"
+                    : "700",
+              },
+            ]}
+          >
+            {match.awayTeam}
+          </Text>
+
+          <TeamLogo
+            logo={match.awayLogo}
+            colors={colors}
+          />
+        </TouchableOpacity>
+
+        {/* STATUT */}
+        <View
+          style={[
+            styles.status,
+            isLive && styles.liveStatus,
+          ]}
+        >
+          {isLive ? (
+            <>
+              <View style={styles.liveDot} />
+
+              <Text style={styles.liveText}>
+                {match.elapsed !== null &&
+                match.elapsed !== undefined
+                  ? `${match.elapsed}'`
+                  : "LIVE"}
+              </Text>
+            </>
+          ) : isFinished ? (
+            <Text
+              style={[
+                styles.finishedText,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
+              TF
+            </Text>
+          ) : null}
+        </View>
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 5,
-  },
-
-  card: {
-    minHeight: 57,
-    borderRadius: 15,
-    borderWidth: 1,
-    overflow: "hidden",
-    paddingHorizontal: 7,
-    paddingVertical: 6,
+    height: 62,
+    width: "100%",
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
   matchRow: {
-    minHeight: 43,
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 4,
   },
 
-  team: {
+  homeTeam: {
     flex: 1,
     minWidth: 0,
+    height: "100%",
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-start",
+  },
+
+  awayTeam: {
+    flex: 1,
+    minWidth: 0,
+    height: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
 
   logo: {
-    width: 25,
-    height: 25,
-    marginRight: 6,
+    width: 24,
+    height: 24,
+    marginHorizontal: 6,
   },
 
   logoFallback: {
-    width: 25,
-    height: 25,
-    borderRadius: 13,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginHorizontal: 6,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 6,
   },
 
   teamName: {
-    flex: 1,
-    minWidth: 0,
-    fontSize: 10,
+    flexShrink: 1,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+
+  result: {
+    width: 62,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  scoreLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   score: {
-    width: 20,
+    minWidth: 17,
     textAlign: "center",
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "900",
-    marginLeft: 4,
   },
 
-  center: {
-    minWidth: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 3,
-  },
-
-  scoreSeparator: {
+  separator: {
+    marginHorizontal: 4,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "800",
   },
 
   time: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "900",
   },
 
-  statusBox: {
-    width: 28,
-    minHeight: 23,
-    marginLeft: 3,
-    borderRadius: 7,
+  status: {
+    width: 38,
+    height: 28,
+    marginLeft: 2,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  liveStatusBox: {
-    width: 38,
+  liveStatus: {
+    flexDirection: "row",
+    borderRadius: 8,
     backgroundColor:
       "rgba(231,71,71,0.10)",
-    flexDirection: "row",
   },
 
   liveDot: {
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor:
-      "#E74747",
+    backgroundColor: "#E74747",
     marginRight: 3,
   },
 
   liveText: {
     color: "#E74747",
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: "900",
   },
 
   finishedText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "900",
   },
 });
