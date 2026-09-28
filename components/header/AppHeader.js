@@ -1,4 +1,6 @@
-import React from "react";
+import React, {
+  useState,
+} from "react";
 
 import {
   View,
@@ -20,6 +22,8 @@ import {
   useDateSelection,
 } from "../../context/DateSelectionContext";
 
+import SideMenu from "../menu/SideMenu";
+
 const SKY_BLUE = "#63BFE8";
 
 export default function AppHeader() {
@@ -33,6 +37,11 @@ export default function AppHeader() {
     selectDate,
     selectLive,
   } = useDateSelection();
+
+  const [
+    menuVisible,
+    setMenuVisible,
+  ] = useState(false);
 
   const getDateLabel = (item) => {
     if (item.key === yesterdayKey) {
@@ -51,133 +60,165 @@ export default function AppHeader() {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: SKY_BLUE,
-        },
-      ]}
-    >
-      <View style={styles.topRow}>
-        <TouchableOpacity
-          style={styles.menuButton}
-          activeOpacity={0.75}
-          onPress={() => router.push("/settings")}
-        >
-          <View style={styles.menu}>
-            <View style={styles.line} />
-            <View style={styles.line} />
-            <View style={styles.line} />
+    <>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor:
+              SKY_BLUE,
+          },
+        ]}
+      >
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            activeOpacity={0.75}
+            onPress={() =>
+              setMenuVisible(true)
+            }
+          >
+            <View style={styles.menu}>
+              <View style={styles.line} />
+              <View style={styles.line} />
+              <View style={styles.line} />
+            </View>
+          </TouchableOpacity>
+
+          <View
+            style={styles.rightActions}
+          >
+            <TouchableOpacity
+              style={styles.actionButton}
+              activeOpacity={0.75}
+              onPress={() =>
+                router.push(
+                  "/calendar"
+                )
+              }
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              activeOpacity={0.75}
+              onPress={() =>
+                router.push(
+                  "/search"
+                )
+              }
+            >
+              <Ionicons
+                name="search-outline"
+                size={20}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-
-        <View style={styles.rightActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            activeOpacity={0.75}
-            onPress={() =>
-              router.push("/calendar")
-            }
-          >
-            <Ionicons
-              name="calendar-outline"
-              size={20}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            activeOpacity={0.75}
-            onPress={() =>
-              router.push("/search")
-            }
-          >
-            <Ionicons
-              name="search-outline"
-              size={20}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
         </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={
+            false
+          }
+          contentContainerStyle={
+            styles.dateScroller
+          }
+        >
+          {dates.map((item) => {
+            const selected =
+              !liveMode &&
+              item.key ===
+                selectedDate;
+
+            return (
+              <React.Fragment
+                key={item.key}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    selectDate(
+                      item.key
+                    )
+                  }
+                  style={[
+                    styles.dateItem,
+                    selected &&
+                      styles.dateItemSelected,
+                  ]}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.dateText,
+                      selected &&
+                        styles.dateTextSelected,
+                    ]}
+                  >
+                    {getDateLabel(item)}
+                  </Text>
+
+                  {selected && (
+                    <View
+                      style={
+                        styles.dateIndicator
+                      }
+                    />
+                  )}
+                </TouchableOpacity>
+
+                {item.key === todayKey && (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={
+                      selectLive
+                    }
+                    style={[
+                      styles.dateItem,
+                      liveMode &&
+                        styles.dateItemSelected,
+                    ]}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.dateText,
+                        liveMode &&
+                          styles.dateTextSelected,
+                      ]}
+                    >
+                      EN DIRECT
+                    </Text>
+
+                    {liveMode && (
+                      <View
+                        style={
+                          styles.dateIndicator
+                        }
+                      />
+                    )}
+                  </TouchableOpacity>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </ScrollView>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={
-          styles.dateScroller
+      <SideMenu
+        visible={menuVisible}
+        onClose={() =>
+          setMenuVisible(false)
         }
-      >
-        {dates.map((item) => {
-          const selected =
-            !liveMode &&
-            item.key === selectedDate;
-
-          return (
-            <TouchableOpacity
-              key={item.key}
-              activeOpacity={0.8}
-              onPress={() =>
-                selectDate(item.key)
-              }
-              style={[
-                styles.dateItem,
-                selected &&
-                  styles.dateItemSelected,
-              ]}
-            >
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.dateText,
-                  selected &&
-                    styles.dateTextSelected,
-                ]}
-              >
-                {getDateLabel(item)}
-              </Text>
-
-              {selected && (
-                <View
-                  style={
-                    styles.dateIndicator
-                  }
-                />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={selectLive}
-          style={[
-            styles.dateItem,
-            liveMode &&
-              styles.dateItemSelected,
-          ]}
-        >
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.dateText,
-              liveMode &&
-                styles.dateTextSelected,
-            ]}
-          >
-            EN DIRECT
-          </Text>
-
-          {liveMode && (
-            <View
-              style={styles.dateIndicator}
-            />
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+      />
+    </>
   );
 }
 
