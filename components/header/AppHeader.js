@@ -30,9 +30,9 @@ const LIVE_STATUSES = [
 ];
 
 function isLiveFixture(item) {
-  const status = item?.fixture?.status?.short;
-
-  return LIVE_STATUSES.includes(status);
+  return LIVE_STATUSES.includes(
+    item?.fixture?.status?.short
+  );
 }
 
 export default function AppHeader() {
@@ -54,8 +54,8 @@ export default function AppHeader() {
     useState(0);
 
   /*
-   * Récupère uniquement le nombre
-   * de matchs actuellement en direct.
+   * Récupère le nombre réel de matchs
+   * actuellement en direct.
    */
   const loadLiveCount = useCallback(
     async ({ forceRefresh = false } = {}) => {
@@ -80,25 +80,21 @@ export default function AppHeader() {
 
         setLiveCount(count);
       } catch {
-        /*
-         * En cas d'erreur réseau, on conserve
-         * la dernière valeur connue.
-         */
+        // On garde la dernière valeur connue.
       }
     },
     []
   );
 
   /*
-   * Chargement initial du nombre de matchs
-   * en direct.
+   * Chargement initial du compteur.
    */
   useEffect(() => {
     loadLiveCount();
   }, [loadLiveCount]);
 
   /*
-   * Mise à jour automatique toutes les 60 secondes.
+   * Actualisation toutes les 60 secondes.
    */
   useEffect(() => {
     const interval = setInterval(() => {
@@ -112,6 +108,9 @@ export default function AppHeader() {
     };
   }, [loadLiveCount]);
 
+  /*
+   * Libellé des dates.
+   */
   const getDateLabel = (item) => {
     if (item.key === yesterdayKey) {
       return "HIER";
@@ -131,6 +130,10 @@ export default function AppHeader() {
   return (
     <>
       <View style={styles.container}>
+        {/* ========================= */}
+        {/* BARRE SUPÉRIEURE */}
+        {/* ========================= */}
+
         <View style={styles.topRow}>
           <TouchableOpacity
             style={styles.menuButton}
@@ -177,6 +180,10 @@ export default function AppHeader() {
           </View>
         </View>
 
+        {/* ========================= */}
+        {/* DATES */}
+        {/* ========================= */}
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -185,12 +192,18 @@ export default function AppHeader() {
           }
         >
           {dates.map((item) => {
+            /*
+             * IMPORTANT :
+             * Au lancement, selectedDate est
+             * automatiquement aujourd'hui.
+             */
             const selected =
               !liveMode &&
               item.key === selectedDate;
 
             return (
               <React.Fragment key={item.key}>
+                {/* DATE */}
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() =>
@@ -222,6 +235,7 @@ export default function AppHeader() {
                   )}
                 </TouchableOpacity>
 
+                {/* EN DIRECT */}
                 {item.key === todayKey && (
                   <TouchableOpacity
                     activeOpacity={0.8}
@@ -232,30 +246,46 @@ export default function AppHeader() {
                         styles.liveItemSelected,
                     ]}
                   >
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        styles.dateText,
-                        liveMode &&
-                          styles.dateTextSelected,
-                      ]}
+                    <View
+                      style={
+                        styles.liveContent
+                      }
                     >
-                      EN DIRECT
-                    </Text>
-
-                    {liveCount > 0 && (
                       <View
-                        style={styles.countBadge}
+                        style={[
+                          styles.liveDot,
+                          liveMode &&
+                            styles.liveDotActive,
+                        ]}
+                      />
+
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          styles.dateText,
+                          liveMode &&
+                            styles.dateTextSelected,
+                        ]}
                       >
-                        <Text
+                        EN DIRECT
+                      </Text>
+
+                      {liveCount > 0 && (
+                        <View
                           style={
-                            styles.countText
+                            styles.countBadge
                           }
                         >
-                          {liveCount}
-                        </Text>
-                      </View>
-                    )}
+                          <Text
+                            style={
+                              styles.countText
+                            }
+                          >
+                            {liveCount}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
 
                     {liveMode && (
                       <View
@@ -272,6 +302,7 @@ export default function AppHeader() {
         </ScrollView>
       </View>
 
+      {/* MENU */}
       <SideMenu
         visible={menuVisible}
         onClose={() =>
@@ -350,12 +381,8 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  /*
-   * Le bouton Direct est légèrement plus large
-   * afin d'accueillir le compteur.
-   */
   liveItem: {
-    minWidth: 92,
+    minWidth: 108,
     height: 40,
     marginHorizontal: 2,
     paddingHorizontal: 10,
@@ -363,6 +390,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+  },
+
+  liveContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 5,
+    backgroundColor:
+      "rgba(255,255,255,0.78)",
+  },
+
+  liveDotActive: {
+    backgroundColor: "#FFFFFF",
   },
 
   dateItemSelected: {
@@ -387,11 +433,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
-  /*
-   * Petit compteur :
-   *
-   * EN DIRECT (6)
-   */
   countBadge: {
     marginLeft: 5,
     minWidth: 20,
