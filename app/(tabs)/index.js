@@ -15,27 +15,13 @@ import {
   View,
 } from "react-native";
 
-import {
-  Ionicons,
-} from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
 import MatchCard from "../../components/matches/MatchCard";
-
-import {
-  footballApi,
-} from "../../services/football";
-
-import {
-  useAppTheme,
-} from "../../theme/useAppTheme";
-
-import {
-  getTranslations,
-} from "../../locales/i18n";
-
-import {
-  useDateSelection,
-} from "../../context/DateSelectionContext";
+import { footballApi } from "../../services/football";
+import { useAppTheme } from "../../theme/useAppTheme";
+import { getTranslations } from "../../locales/i18n";
+import { useDateSelection } from "../../context/DateSelectionContext";
 
 function normalizeFixture(item) {
   const fixture = item?.fixture || {};
@@ -50,91 +36,45 @@ function normalizeFixture(item) {
         `${teams?.home?.id || "home"}-${teams?.away?.id || "away"}`
     ),
 
-    homeTeam:
-      teams?.home?.name ||
-      "Équipe domicile",
+    homeTeam: teams?.home?.name || "Équipe domicile",
+    awayTeam: teams?.away?.name || "Équipe extérieure",
 
-    awayTeam:
-      teams?.away?.name ||
-      "Équipe extérieure",
+    homeTeamId: teams?.home?.id || null,
+    awayTeamId: teams?.away?.id || null,
 
-    homeTeamId:
-      teams?.home?.id || null,
+    homeWinner: teams?.home?.winner ?? null,
+    awayWinner: teams?.away?.winner ?? null,
 
-    awayTeamId:
-      teams?.away?.id || null,
+    homeLogo: teams?.home?.logo || null,
+    awayLogo: teams?.away?.logo || null,
 
-    homeWinner:
-      teams?.home?.winner ?? null,
+    homeScore: goals?.home ?? null,
+    awayScore: goals?.away ?? null,
 
-    awayWinner:
-      teams?.away?.winner ?? null,
+    halftimeHome: goals?.halftime?.home ?? null,
+    halftimeAway: goals?.halftime?.away ?? null,
 
-    homeLogo:
-      teams?.home?.logo || null,
+    competition: league?.name || "Football",
+    leagueId: league?.id || null,
+    competitionLogo: league?.logo || null,
 
-    awayLogo:
-      teams?.away?.logo || null,
+    country: league?.country || "",
+    season: league?.season || null,
+    round: league?.round || null,
 
-    homeScore:
-      goals?.home ?? null,
+    date: fixture?.date || null,
+    timestamp: fixture?.timestamp || null,
+    timezone: fixture?.timezone || null,
 
-    awayScore:
-      goals?.away ?? null,
+    elapsed: status?.elapsed ?? null,
+    shortStatus: status?.short || "",
+    longStatus: status?.long || "",
 
-    halftimeHome:
-      goals?.halftime?.home ?? null,
+    venue: fixture?.venue?.name || null,
+    venueId: fixture?.venue?.id || null,
+    city: fixture?.venue?.city || null,
 
-    halftimeAway:
-      goals?.halftime?.away ?? null,
-
-    competition:
-      league?.name || "Football",
-
-    leagueId:
-      league?.id || null,
-
-    competitionLogo:
-      league?.logo || null,
-
-    country:
-      league?.country || "",
-
-    season:
-      league?.season || null,
-
-    round:
-      league?.round || null,
-
-    date:
-      fixture?.date || null,
-
-    timestamp:
-      fixture?.timestamp || null,
-
-    timezone:
-      fixture?.timezone || null,
-
-    elapsed:
-      status?.elapsed ?? null,
-
-    shortStatus:
-      status?.short || "",
-
-    longStatus:
-      status?.long || "",
-
-    venue:
-      fixture?.venue?.name || null,
-
-    venueId:
-      fixture?.venue?.id || null,
-
-    city:
-      fixture?.venue?.city || null,
-
-    referee:
-      fixture?.referee || null,
+    referee: fixture?.referee || null,
   };
 }
 
@@ -157,11 +97,7 @@ function isFinished(match) {
 }
 
 export default function HomeScreen() {
-  const {
-    colors,
-    brand,
-  } = useAppTheme();
-
+  const { colors, brand } = useAppTheme();
   const { t } = getTranslations();
 
   const {
@@ -169,144 +105,130 @@ export default function HomeScreen() {
     liveMode,
   } = useDateSelection();
 
-  const [
-    matches,
-    setMatches,
-  ] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [liveMatches, setLiveMatches] = useState([]);
 
-  const [
-    liveMatches,
-    setLiveMatches,
-  ] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [error, setError] = useState("");
 
-  const [
-    refreshing,
-    setRefreshing,
-  ] = useState(false);
+  /*
+   * MATCHS DU JOUR / DATE SÉLECTIONNÉE
+   */
+  const loadMatchesForDate = useCallback(
+    async ({ forceRefresh = false } = {}) => {
+      if (liveMode) {
+        setMatches([]);
+        return;
+      }
 
-  const [
-    error,
-    setError,
-  ] = useState("");
+      try {
+        setError("");
 
-  const loadMatchesForDate =
-    useCallback(
-      async ({
-        forceRefresh = false,
-      } = {}) => {
+        const response = await footballApi.fixtures(
+          {
+            date: selectedDate,
+          },
+          {
+            forceRefresh,
+          }
+        );
+
+        const list = Array.isArray(response?.response)
+          ? response.response
+          : [];
+
+        setMatches(list.map(normalizeFixture));
+      } catch (err) {
+        setMatches([]);
+
+        setError(
+          err?.message ||
+            "Impossible de charger les matchs."
+        );
+      }
+    },
+    [selectedDate, liveMode]
+  );
+
+  /*
+   * MATCHS EN DIRECT
+   */
+  const loadLive = useCallback(
+    async ({ forceRefresh = false } = {}) => {
+      if (!liveMode) {
+        setLiveMatches([]);
+        return;
+      }
+
+      try {
+        const response = await footballApi.live(
+          {},
+          {
+            forceRefresh,
+          }
+        );
+
+        const list = Array.isArray(response?.response)
+          ? response.response
+          : [];
+
+        const normalized = list
+          .map(normalizeFixture)
+          .filter(isLiveMatch);
+
+        setLiveMatches(normalized);
+      } catch (err) {
+        setLiveMatches([]);
+      }
+    },
+    [liveMode]
+  );
+
+  /*
+   * CHARGEMENT PRINCIPAL
+   */
+  const loadAll = useCallback(
+    async ({ forceRefresh = false } = {}) => {
+      setLoading(true);
+
+      try {
         if (liveMode) {
-          setMatches([]);
-          return;
+          /*
+           * En mode direct, on ne charge pas
+           * inutilement les matchs de la date.
+           */
+          await loadLive({
+            forceRefresh,
+          });
+        } else {
+          /*
+           * Au démarrage, selectedDate provient
+           * de DateSelectionContext et correspond
+           * automatiquement à Aujourd'hui.
+           */
+          await loadMatchesForDate({
+            forceRefresh,
+          });
         }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      liveMode,
+      loadMatchesForDate,
+      loadLive,
+    ]
+  );
 
-        try {
-          setError("");
-
-          const response =
-            await footballApi.fixtures(
-              {
-                date: selectedDate,
-              },
-              {
-                forceRefresh,
-              }
-            );
-
-          const list =
-            Array.isArray(
-              response?.response
-            )
-              ? response.response
-              : [];
-
-          setMatches(
-            list.map(normalizeFixture)
-          );
-        } catch (err) {
-          setMatches([]);
-
-          setError(
-            err?.message ||
-              "Impossible de charger les matchs."
-          );
-        }
-      },
-      [
-        selectedDate,
-        liveMode,
-      ]
-    );
-
-  const loadLive =
-    useCallback(
-      async ({
-        forceRefresh = false,
-      } = {}) => {
-        if (!liveMode) {
-          setLiveMatches([]);
-          return;
-        }
-
-        try {
-          const response =
-            await footballApi.live(
-              {},
-              {
-                forceRefresh,
-              }
-            );
-
-          const list =
-            Array.isArray(
-              response?.response
-            )
-              ? response.response
-              : [];
-
-          setLiveMatches(
-            list
-              .map(normalizeFixture)
-              .filter(isLiveMatch)
-          );
-        } catch {
-          setLiveMatches([]);
-        }
-      },
-      [liveMode]
-    );
-
-  const loadAll =
-    useCallback(
-      async ({
-        forceRefresh = false,
-      } = {}) => {
-        setLoading(true);
-
-        try {
-          await Promise.all([
-            loadMatchesForDate({
-              forceRefresh,
-            }),
-
-            loadLive({
-              forceRefresh,
-            }),
-          ]);
-        } finally {
-          setLoading(false);
-        }
-      },
-      [
-        loadMatchesForDate,
-        loadLive,
-      ]
-    );
-
+  /*
+   * RECHARGE AUTOMATIQUE LORSQUE :
+   * - la date change ;
+   * - Aujourd'hui est sélectionné ;
+   * - EN DIRECT est activé/désactivé.
+   */
   useEffect(() => {
     loadAll();
   }, [
@@ -315,64 +237,67 @@ export default function HomeScreen() {
     loadAll,
   ]);
 
+  /*
+   * ACTUALISATION DU DIRECT
+   * Toutes les 60 secondes.
+   */
   useEffect(() => {
-    const interval =
-      setInterval(() => {
-        if (liveMode) {
-          loadLive({
-            forceRefresh: true,
-          });
-        }
-      }, 60 * 1000);
+    if (!liveMode) {
+      return undefined;
+    }
 
-    return () =>
+    const interval = setInterval(() => {
+      loadLive({
+        forceRefresh: true,
+      });
+    }, 60 * 1000);
+
+    return () => {
       clearInterval(interval);
+    };
   }, [
     liveMode,
     loadLive,
   ]);
 
-  const onRefresh =
-    useCallback(
-      async () => {
-        setRefreshing(true);
+  /*
+   * PULL TO REFRESH
+   */
+  const onRefresh = useCallback(
+    async () => {
+      setRefreshing(true);
 
-        try {
-          await loadAll({
-            forceRefresh: true,
-          });
-        } finally {
-          setRefreshing(false);
-        }
-      },
-      [loadAll]
-    );
+      try {
+        await loadAll({
+          forceRefresh: true,
+        });
+      } finally {
+        setRefreshing(false);
+      }
+    },
+    [loadAll]
+  );
 
-  const displayedMatches =
-    useMemo(() => {
-      return [
-        ...matches,
-      ]
-        .sort(
-          (a, b) =>
-            new Date(
-              a.date || 0
-            ).getTime() -
-            new Date(
-              b.date || 0
-            ).getTime()
-        )
-        .filter(
-          (match) =>
-            !liveMatches.some(
-              (live) =>
-                live.id === match.id
-            )
-        );
-    }, [
-      matches,
-      liveMatches,
-    ]);
+  /*
+   * MATCHS NORMAUX
+   */
+  const displayedMatches = useMemo(() => {
+    return [...matches]
+      .sort(
+        (a, b) =>
+          new Date(a.date || 0).getTime() -
+          new Date(b.date || 0).getTime()
+      )
+      .filter(
+        (match) =>
+          !liveMatches.some(
+            (live) => live.id === match.id
+          )
+      );
+  }, [
+    matches,
+    liveMatches,
+  ]);
 
   const hasData =
     liveMatches.length > 0 ||
@@ -389,9 +314,7 @@ export default function HomeScreen() {
       ]}
     >
       <ScrollView
-        showsVerticalScrollIndicator={
-          false
-        }
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={
           styles.scrollContent
         }
@@ -403,6 +326,7 @@ export default function HomeScreen() {
           />
         }
       >
+        {/* TITRE */}
         <View
           style={styles.matchesHeader}
         >
@@ -418,7 +342,7 @@ export default function HomeScreen() {
             >
               {liveMode
                 ? "EN DIRECT"
-                : "MATCHS"}
+                : "AUJOURD'HUI"}
             </Text>
 
             <Text
@@ -430,8 +354,9 @@ export default function HomeScreen() {
                 },
               ]}
             >
-              {t.matches ||
-                "Matchs"}
+              {liveMode
+                ? "Matchs en direct"
+                : t.matches || "Matchs"}
             </Text>
           </View>
 
@@ -450,78 +375,159 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {liveMode &&
-          liveMatches.length >
-            0 && (
-            <View
-              style={styles.section}
-            >
+        {/* ========================= */}
+        {/* MODE EN DIRECT */}
+        {/* ========================= */}
+
+        {liveMode && (
+          <View
+            style={styles.section}
+          >
+            {loading && !hasData && (
               <View
-                style={
-                  styles.sectionTitleRow
-                }
+                style={styles.center}
               >
-                <View
-                  style={styles.liveDot}
+                <ActivityIndicator
+                  size="large"
+                  color={brand.green}
                 />
 
                 <Text
                   style={[
-                    styles.sectionTitle,
+                    styles.loadingText,
                     {
                       color:
-                        colors.text,
+                        colors.textSecondary,
                     },
                   ]}
                 >
-                  {t.live ||
-                    "En direct"}
+                  Recherche des matchs
+                  en direct...
                 </Text>
               </View>
+            )}
 
-              {liveMatches.map(
-                (match) => (
-                  <MatchCard
-                    key={`live-${match.id}`}
-                    match={{
-                      ...match,
-                      status:
-                        "live",
-                    }}
-                  />
-                )
+            {!loading &&
+              liveMatches.length > 0 && (
+                <>
+                  <View
+                    style={
+                      styles.sectionTitleRow
+                    }
+                  >
+                    <View
+                      style={
+                        styles.liveDot
+                      }
+                    />
+
+                    <Text
+                      style={[
+                        styles.sectionTitle,
+                        {
+                          color:
+                            colors.text,
+                        },
+                      ]}
+                    >
+                      En direct maintenant
+                    </Text>
+                  </View>
+
+                  {liveMatches.map(
+                    (match) => (
+                      <MatchCard
+                        key={`live-${match.id}`}
+                        match={{
+                          ...match,
+                          status: "live",
+                        }}
+                      />
+                    )
+                  )}
+                </>
               )}
-            </View>
-          )}
 
-        {!liveMode && (
-          <View
-            style={styles.section}
-          >
-            {loading &&
-              !hasData && (
+            {!loading &&
+              liveMatches.length === 0 && (
                 <View
-                  style={styles.center}
+                  style={[
+                    styles.emptyBox,
+                    {
+                      backgroundColor:
+                        colors.surface,
+                      borderColor:
+                        colors.border,
+                    },
+                  ]}
                 >
-                  <ActivityIndicator
-                    size="large"
-                    color={brand.green}
+                  <Ionicons
+                    name="radio-outline"
+                    size={40}
+                    color={
+                      colors.textSecondary
+                    }
                   />
 
                   <Text
                     style={[
-                      styles.loadingText,
+                      styles.emptyTitle,
+                      {
+                        color:
+                          colors.text,
+                      },
+                    ]}
+                  >
+                    Aucun match en direct
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.emptyText,
                       {
                         color:
                           colors.textSecondary,
                       },
                     ]}
                   >
-                    Chargement des
-                    matchs...
+                    Aucun match n'est
+                    actuellement en direct.
                   </Text>
                 </View>
               )}
+          </View>
+        )}
+
+        {/* ========================= */}
+        {/* MATCHS D'AUJOURD'HUI */}
+        {/* ========================= */}
+
+        {!liveMode && (
+          <View
+            style={styles.section}
+          >
+            {loading && !hasData && (
+              <View
+                style={styles.center}
+              >
+                <ActivityIndicator
+                  size="large"
+                  color={brand.green}
+                />
+
+                <Text
+                  style={[
+                    styles.loadingText,
+                    {
+                      color:
+                        colors.textSecondary,
+                    },
+                  ]}
+                >
+                  Chargement des matchs...
+                </Text>
+              </View>
+            )}
 
             {!loading &&
               error &&
@@ -552,8 +558,7 @@ export default function HomeScreen() {
                       },
                     ]}
                   >
-                    Impossible de
-                    charger
+                    Impossible de charger
                   </Text>
 
                   <Text
@@ -572,8 +577,7 @@ export default function HomeScreen() {
                     activeOpacity={0.8}
                     onPress={() =>
                       loadAll({
-                        forceRefresh:
-                          true,
+                        forceRefresh: true,
                       })
                     }
                     style={[
@@ -639,9 +643,8 @@ export default function HomeScreen() {
                       },
                     ]}
                   >
-                    Aucun match
-                    disponible pour
-                    cette date.
+                    Aucun match disponible
+                    pour aujourd'hui.
                   </Text>
                 </View>
               )}
@@ -662,56 +665,6 @@ export default function HomeScreen() {
             )}
           </View>
         )}
-
-        {liveMode &&
-          !loading &&
-          liveMatches.length ===
-            0 && (
-            <View
-              style={[
-                styles.emptyBox,
-                {
-                  backgroundColor:
-                    colors.surface,
-                  borderColor:
-                    colors.border,
-                },
-              ]}
-            >
-              <Ionicons
-                name="radio-outline"
-                size={40}
-                color={
-                  colors.textSecondary
-                }
-              />
-
-              <Text
-                style={[
-                  styles.emptyTitle,
-                  {
-                    color:
-                      colors.text,
-                  },
-                ]}
-              >
-                Aucun match en direct
-              </Text>
-
-              <Text
-                style={[
-                  styles.emptyText,
-                  {
-                    color:
-                      colors.textSecondary,
-                  },
-                ]}
-              >
-                Aucun match n'est
-                actuellement en direct.
-              </Text>
-            </View>
-          )}
       </ScrollView>
     </View>
   );
