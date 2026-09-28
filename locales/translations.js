@@ -3,7 +3,7 @@ export const translations = {
     matches: "Matchs",
     explore: "Explorer",
     transfers: "Transferts",
-    news: "Actualités",
+    news: "Info",
     favorites: "Favoris",
 
     today: "AUJOURD'HUI",
@@ -28,6 +28,16 @@ export const translations = {
     teams: "Équipes",
     players: "Joueurs",
 
+    findMatch: "Trouver un match",
+    settings: "Réglages",
+    about: "Qui sommes-nous ?",
+    reportProblem: "Soumettre un problème",
+    removeAds: "Retirer les publicités",
+
+    login: "Se connecter",
+    loginSubtitle:
+      "Connectez-vous à votre compte",
+
     emptyFavorites:
       "Vos favoris apparaîtront ici.",
   },
@@ -36,7 +46,7 @@ export const translations = {
     matches: "Matches",
     explore: "Explore",
     transfers: "Transfers",
-    news: "News",
+    news: "Info",
     favorites: "Favorites",
 
     today: "TODAY",
@@ -61,6 +71,16 @@ export const translations = {
     teams: "Teams",
     players: "Players",
 
+    findMatch: "Find a match",
+    settings: "Settings",
+    about: "About us",
+    reportProblem: "Report a problem",
+    removeAds: "Remove ads",
+
+    login: "Sign in",
+    loginSubtitle:
+      "Sign in to your account",
+
     emptyFavorites:
       "Your favorites will appear here.",
   },
@@ -69,7 +89,7 @@ export const translations = {
     matches: "Partidos",
     explore: "Explorar",
     transfers: "Fichajes",
-    news: "Noticias",
+    news: "Info",
     favorites: "Favoritos",
 
     today: "HOY",
@@ -94,6 +114,16 @@ export const translations = {
     teams: "Equipos",
     players: "Jugadores",
 
+    findMatch: "Buscar un partido",
+    settings: "Ajustes",
+    about: "Quiénes somos",
+    reportProblem: "Informar de un problema",
+    removeAds: "Eliminar publicidad",
+
+    login: "Iniciar sesión",
+    loginSubtitle:
+      "Inicia sesión en tu cuenta",
+
     emptyFavorites:
       "Tus favoritos aparecerán aquí.",
   },
@@ -102,7 +132,7 @@ export const translations = {
     matches: "Jogos",
     explore: "Explorar",
     transfers: "Transferências",
-    news: "Notícias",
+    news: "Info",
     favorites: "Favoritos",
 
     today: "HOJE",
@@ -127,12 +157,24 @@ export const translations = {
     teams: "Equipes",
     players: "Jogadores",
 
+    findMatch: "Encontrar um jogo",
+    settings: "Configurações",
+    about: "Sobre nós",
+    reportProblem: "Comunicar um problema",
+    removeAds: "Remover anúncios",
+
+    login: "Iniciar sessão",
+    loginSubtitle:
+      "Inicie sessão na sua conta",
+
     emptyFavorites:
       "Os seus favoritos aparecerão aqui.",
   },
 };
 
-export function getTranslations(languageCode) {
+export function getTranslations(
+  languageCode
+) {
   return (
     translations[languageCode] ||
     translations.en
